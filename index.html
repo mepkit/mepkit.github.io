@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Kalkulator gratis MEP-Kit: daya PLN, titik lampu, kapasitas AC, ukuran kabel dan MCB. Lengkap dengan alasan bahasa awam dan acuan PUIL 2020 / SNI.">
+<meta name="description" content="Kalkulator gratis MEP-Kit: daya PLN, titik lampu, kapasitas AC, ukuran kabel dan MCB, simulasi AC 3D. Lengkap dengan alasan bahasa awam dan acuan PUIL 2020 / SNI.">
 <meta name="theme-color" content="#1d1f22">
 <meta property="og:title" content="Hitung Cepat MEP-Kit">
 <meta property="og:description" content="Daya PLN, titik lampu, AC, kabel & MCB. Gratis, lengkap dengan alasannya.">
@@ -115,7 +115,7 @@ footer a{color:var(--ink);font-weight:600}
 .cta a{background:var(--accent);color:var(--accent-ink);text-decoration:none;padding:9px 14px;border-radius:7px;font-weight:700}
 @media (max-width:420px){.big div{padding:10px 10px}.big strong{font-size:18px}.loadhead{display:none}.load{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr) 30px;padding-bottom:8px;border-bottom:1px dashed var(--line)}.load>input:first-child{grid-column:1/-1}}
 @media (prefers-reduced-motion:no-preference){.result{transition:box-shadow .2s}}
-@media (max-width:560px){.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-bottom:12px;overflow:visible}.tabs a{text-align:center;border-radius:8px;border:1px solid #3a3c40;padding:9px 6px;font-size:13.5px}.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}}
+@media (max-width:560px){.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-bottom:12px;overflow:visible}.tabs a.wide{grid-column:1/-1}.tabs a{text-align:center;border-radius:8px;border:1px solid #3a3c40;padding:9px 6px;font-size:13.5px}.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}}
 @media (max-width:420px){.load .unit input{padding:7px 24px 7px 8px}.load .unit span{right:6px;font-size:11px}}
 .big.cost{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
 @media (max-width:560px){.big.cost{grid-template-columns:1fr 1fr}.big.cost>div:last-child{grid-column:1/-1}}
@@ -134,6 +134,7 @@ footer a{color:var(--ink);font-weight:600}
       <a href="#lampu" data-tab="lampu">Jumlah titik lampu</a>
       <a href="#ac" data-tab="ac">Kebutuhan AC</a>
       <a href="#kabel" data-tab="kabel">Kabel &amp; MCB</a>
+      <a href="simulasi-ac.html" class="wide">Simulasi AC 3D <span class="soon">baru</span></a>
     </nav>
   </div>
 </header>
@@ -254,6 +255,7 @@ footer a{color:var(--ink);font-weight:600}
     <p class="hint"><b>Jangkauan:</b> untuk ruang tunggal sampai 100 m² dengan plafon sampai 4 m (kamar, kantor kecil, toko, kafe) yang pakai AC split dinding atau cassette. Ruang lebih besar atau lebih tinggi butuh perhitungan khusus.</p>
   </div>
   <div class="result" id="resAC" aria-live="polite"></div>
+  <a class="dm" href="simulasi-ac.html" style="border-style:dashed">Mau lihat ruangannya? Coba Simulasi AC 3D<small>ruangan bisa diputar, AC ditempatkan otomatis, biaya listrik inverter vs AC biasa</small><span class="go">🧊 Buka Simulasi AC 3D</span></a>
   <a class="dm" href="https://www.instagram.com/mep.kit.id/" target="_blank" rel="noopener">Masih bingung pilih AC? Tanya via DM Instagram @mep.kit.id<small>buka profil, klik Kirim Pesan, lalu kirim ukuran ruanganmu</small><span class="go">👉 Klik di sini untuk DM</span></a>
 </section>
 

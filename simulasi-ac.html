@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Simulasi AC 3D gratis dari MEP-Kit: ruangan bisa diputar, AC ditempatkan otomatis, kapasitas PK, MCB, dan biaya listrik AC inverter vs AC biasa (CSPF).">
+<meta name="theme-color" content="#1d1f22">
+<meta property="og:title" content="Simulasi AC 3D · MEP-Kit">
+<meta property="og:description" content="Lihat ruanganmu mendingin. Berapa PK, dipasang di mana, dan berapa listriknya sebulan.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f5c518'/%3E%3Cpath d='M18 4 8 18h7l-2 10 11-15h-7z' fill='%231d1f22'/%3E%3C/svg%3E">
+<title>Simulasi AC 3D · MEP-Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#efeee9; --surface:#ffffff; --ink:#1d1f22; --muted:#5d5f63; --line:#d6d4cc;
+  --accent:#f5c518; --accent-ink:#1d1f22; --band:#1d1f22; --band-ink:#f3f1ea;
+  --ok:#1f7a4d; --warn:#a86400; --bad:#b3261e; --soft:#f7f1d6; --cold:#3aa0ff; --hot:#f28c28;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17181a; --surface:#222428; --ink:#ecebe6; --muted:#a3a39d; --line:#3a3c40;
+  --band:#0f1011; --ok:#5cc28f; --warn:#e2a54a; --bad:#f08a80; --soft:#2c2a1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17181a; --surface:#222428; --ink:#ecebe6; --muted:#a3a39d; --line:#3a3c40;
+  --band:#0f1011; --ok:#5cc28f; --warn:#e2a54a; --bad:#f08a80; --soft:#2c2a1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left))}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+header .brand{font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:.02em}
+header .brand b{background:var(--accent);color:var(--accent-ink);padding:1px 6px;border-radius:6px}
+header small{color:var(--muted);font-size:12px}
+h1{font-family:var(--f-display);font-size:24px;margin:0 0 4px;line-height:1.15}
+.lead{color:var(--muted);margin:0 0 12px;font-size:14px}
+
+/* ---------- stage 3D ---------- */
+.stage{background:radial-gradient(120% 90% at 50% 0%,#2b2e33 0%,#1d1f22 60%,#141517 100%);color:var(--band-ink);border-radius:18px;padding:10px 12px 10px;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.scene{position:relative;height:320px;perspective:900px;perspective-origin:50% 30%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.scene:active{cursor:grabbing}
+.world{position:absolute;left:50%;top:58%;transform-style:preserve-3d;width:0;height:0}
+.world *{transform-style:preserve-3d}
+.f{position:absolute;left:0;top:0;transform-origin:0 0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.floor{background:
+  repeating-linear-gradient(0deg,transparent 0 calc(var(--m) - 1px),rgba(255,255,255,.14) calc(var(--m) - 1px) var(--m)),
+  repeating-linear-gradient(90deg,transparent 0 calc(var(--m) - 1px),rgba(255,255,255,.14) calc(var(--m) - 1px) var(--m)),
+  linear-gradient(135deg,#6a6d74,#4a4d53)}
+.wall{background:linear-gradient(180deg,#e9e6dc,#cfccc2)}
+.wall.ghost{opacity:.12}
+.win{background:linear-gradient(180deg,#bfe0ff,#7fbcf5);border:3px solid #f3f1ea}
+.door{background:#9a7b57;border:2px solid #6e5638}
+.lbl{position:absolute;font-family:var(--f-mono);font-size:11px;color:#cfceca;white-space:nowrap;transform-origin:0 0}
+.tag{position:absolute;transform-origin:0 0;font-family:var(--f-mono);font-size:10px;color:#1d1f22;background:#f5c518;padding:1px 5px;border-radius:4px;white-space:nowrap}
+.cone{background:linear-gradient(180deg,rgba(58,160,255,.55),rgba(58,160,255,0));opacity:0;transform-origin:50% 0}
+.room.on .cone{animation:cone 2.4s ease-out infinite}
+@keyframes cone{0%{opacity:0;transform:var(--t) scaleY(.2)}20%{opacity:.9}100%{opacity:0;transform:var(--t) scaleY(1.15)}}
+.led{position:absolute;width:4px;height:4px;border-radius:50%;background:#39d353;right:4px;top:3px;opacity:0}
+.room.on .led{opacity:1;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+.tint{position:absolute;inset:0;pointer-events:none;border-radius:14px;background:radial-gradient(60% 50% at 50% 60%,rgba(242,140,40,.32),rgba(242,140,40,0));transition:background .6s}
+.hint3d{position:absolute;left:6px;bottom:4px;font-size:11px;color:#8d8c86;font-family:var(--f-mono)}
+.hud{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:6px;flex-wrap:wrap}
+.hud .t{font-family:var(--f-mono);font-size:30px;font-weight:500;line-height:1}
+.hud .t small{font-size:13px;font-family:var(--f-body);color:#b9b8b2;display:block;margin-bottom:2px}
+.hud .meter{font-family:var(--f-mono);font-size:13px;color:#f3f1ea;text-align:right}
+.hud .meter b{display:block;font-size:20px;color:var(--accent)}
+.play{background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:10px 16px;font:600 14px var(--f-body);cursor:pointer}
+.play:active{transform:scale(.97)}
+.mode{display:flex;gap:6px;background:#2b2d31;border-radius:999px;padding:4px}
+.mode button{border:0;background:transparent;color:#cfceca;font:600 13px var(--f-body);padding:6px 12px;border-radius:999px;cursor:pointer}
+.mode button.on{background:var(--accent);color:var(--accent-ink)}
+.place{margin-top:8px;font-size:12px;color:#cfceca;border-top:1px solid #33363a;padding-top:8px}
+.place b{color:var(--accent)}
+
+/* ---------- panels ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.panel h2{font-family:var(--f-display);font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 .full{grid-column:1/-1}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;font-weight:600}
+input,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;background:var(--bg);color:var(--ink)}
+.unit{position:relative}.unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)}
+.unit input{padding-right:40px}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+.big div{background:var(--soft);border-radius:12px;padding:10px}
+.big small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.big strong{display:block;font-family:var(--f-display);font-size:22px;line-height:1.1;margin-top:2px}
+.big em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:2px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{border:1px solid var(--line);border-radius:12px;padding:10px;position:relative}
+.card.win{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.card h3{margin:0 0 6px;font-size:14px;font-family:var(--f-display)}
+.card .rp{font-family:var(--f-display);font-size:20px;line-height:1.1}
+.card .sub{font-size:12px;color:var(--muted)}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--ink)}
+.chip.ok{background:var(--ok);color:#fff}
+.comp{height:14px;background:var(--bg);border-radius:7px;overflow:hidden;margin:8px 0 2px;position:relative}
+.comp i{position:absolute;inset:0;background:var(--cold);transform-origin:left}
+.comp.onoff i{animation:onoff 2.4s steps(1) infinite}
+.comp.inv i{transform:scaleX(.55);animation:inv 4s ease-in-out infinite}
+@keyframes onoff{0%{transform:scaleX(1)}55%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes inv{0%,100%{transform:scaleX(.5)}50%{transform:scaleX(.65)}}
+.payback{margin-top:12px;background:var(--soft);border-radius:12px;padding:12px}
+.payback strong{font-family:var(--f-display);font-size:20px}
+.why{margin-top:12px}
+.why h3{font-size:15px;font-family:var(--f-display);margin:0 0 6px}
+.why ol{padding-left:20px;margin:0}
+.why li{margin-bottom:6px}
+.calc{font-family:var(--f-mono);font-size:12px;background:var(--bg);border-radius:10px;padding:10px;white-space:pre-wrap;margin-top:10px;overflow-x:auto}
+.ref{font-size:12px;color:var(--muted);margin:10px 0 0}
+.actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.primary{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:10px 14px;font:600 14px var(--f-body);cursor:pointer}
+.toast{font-size:12px;color:var(--ok);font-weight:600}
+footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
+footer a{color:inherit}
+@media (prefers-reduced-motion:reduce){.room.on .cone,.led,.comp i{animation:none!important}}
+/* ---- gaya website MEP-Kit ---- */
+header.band{background:var(--band);color:var(--band-ink)}
+header.band .wrap{padding:20px max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;letter-spacing:.02em;font-size:18px}
+.bolt{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;background:var(--accent)}
+.bolt svg{width:16px;height:16px}
+header.band h1{font-size:clamp(24px,6vw,34px);margin:14px 0 6px;color:var(--band-ink)}
+.lede{color:#c9c7bf;margin:0 0 16px;max-width:60ch;font-size:15px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs a{flex:0 0 auto;padding:10px 14px;border-radius:8px 8px 0 0;color:#c9c7bf;text-decoration:none;font-weight:600;font-size:14px;border:1px solid transparent;border-bottom:0}
+.tabs a[aria-current="page"]{background:var(--bg);color:var(--ink)}
+.tabs .soon{font-size:11px;font-family:var(--f-mono);background:#3a3c40;color:#ddd;padding:1px 6px;border-radius:4px;margin-left:6px}
+.tabs a[aria-current="page"] .soon{background:var(--accent);color:var(--accent-ink)}
+@media (max-width:560px){.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-bottom:12px;overflow:visible}.tabs a{text-align:center;border-radius:8px;border:1px solid #3a3c40;padding:9px 6px;font-size:13.5px}.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.tabs a.wide{grid-column:1/-1}}
+.dm{display:block;margin-top:12px;text-align:center;padding:12px 14px;border-radius:10px;border:2px solid var(--accent);color:var(--ink);text-decoration:none;font-weight:700;background:var(--soft)}
+.dm small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+.dm .go{display:inline-block;margin-top:8px;background:var(--accent);color:var(--accent-ink);padding:8px 16px;border-radius:999px;font-size:14px;font-weight:700}
+footer{background:var(--band);color:#c9c7bf;margin-top:28px;font-size:12.5px;text-align:left}
+footer .wrap{padding:18px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left))}
+footer p{margin:0 0 8px}
+.wrap{padding-top:18px}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+  <div class="brand"><span class="bolt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 0 2 9h5l-1.5 7L14 6.5H9z" fill="#1d1f22"/></svg></span>MEP-Kit</div>
+  <h1>Simulasi AC 3D: berapa PK, dipasang di mana, berapa listriknya?</h1>
+  <p class="lede">Isi ukuran ruang. Ruangan 3D-nya bisa diputar dengan jari, AC ditempatkan otomatis di posisi yang pas, lalu bandingkan AC inverter dan AC biasa.</p>
+  <nav class="tabs" aria-label="Pilih kalkulator">
+    <a href="index.html#daya">Kebutuhan daya PLN</a>
+    <a href="index.html#lampu">Jumlah titik lampu</a>
+    <a href="index.html#ac">Kebutuhan AC</a>
+    <a href="index.html#kabel">Kabel &amp; MCB</a>
+    <a href="simulasi-ac.html" class="wide" aria-current="page">Simulasi AC 3D <span class="soon">baru</span></a>
+  </nav>
+</div></header>
+<div class="wrap">
+<div class="stage">
+  <div class="scene" id="scene"><div class="world room" id="world"></div><div class="tint" id="tint"></div><div class="hint3d">↔ geser untuk memutar</div></div>
+  <div class="hud">
+    <div class="t"><small>Suhu ruang</small><span id="temp">31,0 °C</span></div>
+    <div class="mode" id="mode"><button class="on" data-m="inv">Inverter</button><button data-m="non">AC biasa</button></div>
+    <div class="meter"><span id="meterLbl">Listrik AC saat ini</span><b id="watt">0 W</b></div>
+    <button class="play" id="play">Nyalakan AC</button>
+  </div>
+  <div class="place" id="place"></div>
+</div>
+
+<div class="panel">
+  <h2><span class="step">1</span>Ruangan</h2>
+  <div class="grid2">
+    <div class="full"><label for="acf">Fungsi ruang</label>
+      <select id="acf">
+        <option value="400">Kamar tidur</option>
+        <option value="450" selected>Ruang keluarga / ruang tamu</option>
+        <option value="550">Ruang kerja / kantor</option>
+        <option value="600">Toko / ruang pamer</option>
+        <option value="650">Restoran / kafe</option>
+      </select></div>
+    <div><label for="acp">Panjang</label><div class="unit"><input id="acp" type="number" inputmode="decimal" min="2" max="12" step="0.1" value="6"><span>m</span></div></div>
+    <div><label for="acl">Lebar</label><div class="unit"><input id="acl" type="number" inputmode="decimal" min="2" max="12" step="0.1" value="6"><span>m</span></div></div>
+    <div><label for="act">Tinggi plafon</label><div class="unit"><input id="act" type="number" inputmode="decimal" min="2.4" max="4" step="0.05" value="3"><span>m</span></div></div>
+    <div><label for="aco">Jumlah orang</label><div class="unit"><input id="aco" type="number" inputmode="numeric" min="0" max="20" step="1" value="4"><span>org</span></div></div>
+    <div><label for="acs">Matahari sore?</label><select id="acs"><option value="1">Tidak</option><option value="1.1">Ya, dinding barat</option></select></div>
+    <div><label for="aca">Di bawah atap?</label><select id="aca"><option value="1">Tidak (ada lantai di atas)</option><option value="1.15">Ya, langsung di bawah atap</option></select></div>
+    <div><label for="acw">Alat listrik di ruang</label><div class="unit"><input id="acw" type="number" inputmode="numeric" min="0" step="50" value="300"><span>W</span></div></div>
+    <div><label for="nunit">Jumlah unit AC</label><select id="nunit"><option value="0" selected>Otomatis</option><option value="1">1 unit</option><option value="2">2 unit</option><option value="3">3 unit</option><option value="4">4 unit</option></select></div>
+    <div><label for="jam">Jam pakai AC per hari</label><div class="unit"><input id="jam" type="number" inputmode="decimal" min="1" max="24" step="0.5" value="8"><span>jam</span></div></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2><span class="step">2</span>Listrik &amp; harga</h2>
+  <div class="grid2">
+    <div><label for="gol">Daya PLN di rumah</label><select id="gol"><option value="1352">900 VA</option><option value="1444.7" selected>1.300 – 2.200 VA</option><option value="1699.53">3.500 VA ke atas</option></select></div>
+    <div><label for="tarif">Tarif per kWh</label><div class="unit"><input id="tarif" type="number" inputmode="decimal" min="0" step="0.01"><span>Rp</span></div></div>
+    <div><label for="cspfNon">Label AC biasa</label><select id="cspfNon"></select></div>
+    <div><label for="cspfInv">Label AC inverter</label><select id="cspfInv"></select></div>
+    <div><label for="cNonV">CSPF AC biasa (dari label)</label><input id="cNonV" type="number" inputmode="decimal" min="2" max="8" step="0.01"></div>
+    <div><label for="cInvV">CSPF AC inverter (dari label)</label><input id="cInvV" type="number" inputmode="decimal" min="2" max="8" step="0.01"></div>
+    <div><label for="hNon">Harga AC biasa (per unit)</label><div class="unit"><input id="hNon" type="number" inputmode="numeric" min="0" step="100000"><span>Rp</span></div></div>
+    <div><label for="hInv">Harga AC inverter (per unit)</label><div class="unit"><input id="hInv" type="number" inputmode="numeric" min="0" step="100000"><span>Rp</span></div></div>
+  </div>
+  <p class="hint">Pilih bintang di label hemat energi, atau langsung ketik angka <b>CSPF</b> yang tertulis di label / brosur unit AC (lebih akurat). Angka CSPF tiap bintang di pilihan ini perkiraan.</p>
+  <p class="hint">Harga diisi otomatis sebagai perkiraan umum. Ganti dengan harga toko yang Adit lihat.</p>
+</div>
+
+<div class="panel" id="res"></div>
+
+<a class="dm" href="https://www.instagram.com/mep.kit.id/" target="_blank" rel="noopener">Masih bingung pilih AC? Tanya via DM Instagram @mep.kit.id<small>buka profil, klik Kirim Pesan, lalu kirim ukuran ruanganmu</small><span class="go">👉 Klik di sini untuk DM</span></a>
+<a class="dm" href="https://lynk.id/mepkit" target="_blank" rel="noopener" style="border-style:dashed">Butuh RAB &amp; MTO listrik yang rapi?<small>Template Excel MEP-Kit: isi volume, harga bahan &amp; upah langsung kehitung, rekap sampai PPN</small><span class="go">Lihat Template di Lynk</span></a>
+</div>
+<footer><div class="wrap">
+  <p><b>Penting:</b> hasil simulasi ini perkiraan awal untuk perencanaan. Posisi AC mengikuti praktik pemasangan umum; cek jalur pipa, pembuangan air, dan tempat unit outdoor di lapangan. Sebelum membeli dan memasang, cek dan ricek dengan SNI 6390:2020, PUIL 2020, katalog merek, dan label hemat energi (CSPF) di unitnya. Pekerjaan instalasi wajib dikerjakan oleh orang yang kompeten. Kalau kamu bukan dari bidang teknik, konsultasikan hasilnya dengan teknisi atau konsultan tata udara.</p>
+  <p>© 2026 MEP-Kit · versi uji coba</p>
+</div></footer>
+
+<script>
+const $=s=>document.querySelector(s);
+const nf=(v,d=0)=>Number(v).toLocaleString("id-ID",{minimumFractionDigits:d,maximumFractionDigits:d});
+const rp=x=>x>=1e6?"Rp "+nf(x/1e6,2)+" jt":"Rp "+nf(Math.round(x/1000)*1000);
+const PK=[["½ PK",5000,2800000,3600000],["¾ PK",7000,3100000,4000000],["1 PK",9000,3400000,4400000],["1½ PK",12000,4400000,5700000],["2 PK",18000,5900000,7600000],["2½ PK",21000,6900000,8900000]];
+// Label hemat energi AC: SKEM sejak 2023 pakai CSPF minimum 3,4 (maks 4 bintang). Angka CSPF per bintang di bawah = perkiraan, bukan dari teks regulasi.
+const STARS=[["Tanpa label / AC lama","2.80"],["Bintang 1","3.40"],["Bintang 2","3.80"],["Bintang 3","4.20"],["Bintang 4","4.80"]];
+const LOAD_AVG=0.7;
+for(const id of ["cspfNon","cspfInv"]){$("#"+id).innerHTML=STARS.map(s=>'<option value="'+s[1]+'">'+s[0]+' · CSPF ± '+s[1].replace('.',',')+'</option>').join('')}
+$("#cspfNon").value="3.40";$("#cspfInv").value="4.20";$("#cNonV").value="3.40";$("#cInvV").value="4.20";
+$("#cspfNon").addEventListener("change",()=>{$("#cNonV").value=$("#cspfNon").value});$("#cspfInv").addEventListener("change",()=>{$("#cInvV").value=$("#cspfInv").value});
+let tarifManual=false,hargaManual={non:false,inv:false},mode="inv",playing=false,anim=null;
+$("#tarif").value=$("#gol").value;
+$("#gol").addEventListener("change",()=>{if(!tarifManual)$("#tarif").value=$("#gol").value;calc()});
+$("#tarif").addEventListener("input",e=>{tarifManual=e.target.value!=="";if(!tarifManual)$("#tarif").value=$("#gol").value;calc()});
+$("#hNon").addEventListener("input",e=>{hargaManual.non=e.target.value!=="";calc()});
+$("#hInv").addEventListener("input",e=>{hargaManual.inv=e.target.value!=="";calc()});
+["#acf","#acp","#acl","#act","#aco","#acs","#aca","#acw","#jam","#nunit","#cspfNon","#cspfInv","#cNonV","#cInvV"].forEach(s=>$(s).addEventListener("input",calc));
+$("#mode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;mode=b.dataset.m;[...$("#mode").children].forEach(x=>x.classList.toggle("on",x===b));calc();if(playing)startAnim()});
+$("#play").addEventListener("click",()=>{playing?stopAnim():startAnim()});
+
+let R=null;
+function calc(){
+  const q=+$("#acf").value, fl=$("#acf").selectedOptions[0].textContent;
+  const P=Math.min(12,Math.max(2,+$("#acp").value||0)),L=Math.min(12,Math.max(2,+$("#acl").value||0)),H=Math.min(4,Math.max(2.4,+$("#act").value||3));
+  const org=Math.max(0,+$("#aco").value||0),fs=+$("#acs").value,fa=+$("#aca").value,Wa=Math.max(0,+$("#acw").value||0);
+  const jam=Math.min(24,Math.max(1,+$("#jam").value||8));
+  const A=P*L,fh=Math.max(1,H/3);
+  const qRuang=A*q*fh*fs*fa,qOrg=org*450,qAlat=Wa*3.412,Q=qRuang+qOrg+qAlat;
+  let units;const nman=+$("#nunit").value;
+  if(nman>0){const u1=PK.find(p=>p[1]>=Q/nman)||PK[5];units=Array(nman).fill(u1)}
+  else{const single=PK.find(p=>p[1]>=Q);
+  if(single)units=[single];else{const half=PK.find(p=>p[1]>=Q/2);if(half)units=[half,half];else{const third=PK.find(p=>p[1]>=Q/3);units=third?[third,third,third]:[PK[5],PK[5],PK[5],PK[5]]}}}
+  const kurang=cap_(units)<Q;function cap_(u){return u.reduce((a,b)=>a+b[1],0)}
+  const cap=units.reduce((a,b)=>a+b[1],0);
+  const n=units.length,u=units[0];
+  if(!hargaManual.non)$("#hNon").value=u[2];if(!hargaManual.inv)$("#hInv").value=u[3];
+  const hNon=(+$("#hNon").value||0)*n,hInv=(+$("#hInv").value||0)*n;
+  const tarif=+$("#tarif").value||0;
+  const cNon=Math.min(8,Math.max(2,+$("#cNonV").value||+$("#cspfNon").value)),cInv=Math.min(8,Math.max(2,+$("#cInvV").value||+$("#cspfInv").value));
+  const kWth=Q/3412, kWavg=kWth*LOAD_AVG;
+  const kwhNon=kWavg*jam*30/cNon, kwhInv=kWavg*jam*30/cInv;
+  const bNon=kwhNon*tarif,bInv=kwhInv*tarif,selisih=bNon-bInv;
+  const extra=hInv-hNon, payback=selisih>0?extra/selisih:Infinity;
+  const wNon=Math.round(cap/cNon/3.412/10)*10, wInv=Math.round(cap/cInv/3.412/10)*10;
+  const I=(wNon/220/0.85), mcb=[6,10,16,20,25,32].find(m=>m>=I*1.25)||40;
+  R={kurang,nman,q,fl,P,L,H,A,org,fs,fa,Wa,jam,Q,qRuang,qOrg,qAlat,units,cap,n,hNon,hInv,tarif,cNon,cInv,kwhNon,kwhInv,bNon,bInv,selisih,extra,payback,wNon,wInv,mcb,kWth};
+  buildRoom();render();
+}
+const nm=u=>u.length===1?u[0][0]:u.length+" × "+u[0][0];
+
+/* =========================================================
+   RUANGAN 3D (CSS 3D, tanpa library)
+   sumbu: x = panjang (kanan), y = lebar (ke depan), z = tinggi
+   ========================================================= */
+const world=$("#world");let M=44; // px per meter
+let rotX=58,rotZ=-32;
+function setCam(){world.style.transform=`translate3d(0,0,0) rotateX(${rotX}deg) rotateZ(${rotZ}deg) translate3d(${-R.P*M/2}px,${-R.L*M/2}px,0)`;world.querySelectorAll(".tag").forEach(t=>t.style.transform=t.dataset.tr+` rotateZ(${-rotZ}deg) rotateX(${-rotX}deg)`)}
+(function drag(){let d=null;const sc=$("#scene");
+  sc.addEventListener("pointerdown",e=>{d={x:e.clientX,y:e.clientY,rz:rotZ,rx:rotX};sc.setPointerCapture(e.pointerId)});
+  sc.addEventListener("pointermove",e=>{if(!d)return;rotZ=d.rz+(e.clientX-d.x)*0.4;rotX=Math.max(35,Math.min(75,d.rx-(e.clientY-d.y)*0.3));setCam()});
+  sc.addEventListener("pointerup",()=>d=null);sc.addEventListener("pointercancel",()=>d=null);})();
+function face(cls,w,h,tf,style){const e=document.createElement("div");e.className="f "+(cls||"");e.style.width=w+"px";e.style.height=h+"px";e.style.transform=tf;if(style)e.style.cssText+=style;return e}
+// kotak: pos (x,y,z) m, ukuran (w,d,h) m. warna: {top,side}
+function box(x,y,z,w,d,h,c,cls){
+  const g=document.createElement("div");g.className="f "+(cls||"");g.style.transform=`translate3d(${x*M}px,${y*M}px,${z*M}px)`;
+  const W=w*M,D=d*M,Hh=h*M;
+  const sh=(k)=>`filter:brightness(${k})`;
+  g.appendChild(face("",W,D,`translate3d(0,0,${Hh}px)`,`background:${c.top||c.side}`));
+  g.appendChild(face("",W,Hh,`translate3d(0,${D}px,${Hh}px) rotateX(-90deg)`,`background:${c.side};${sh(.92)}`)); // depan (+y)
+  g.appendChild(face("",W,Hh,`translate3d(${W}px,0,0) rotateZ(180deg) rotateX(-90deg) translate3d(0,0,0)`,`background:${c.side};${sh(.8)}`)); // belakang (-y)
+  g.appendChild(face("",D,Hh,`translate3d(0,${D}px,0) rotateZ(-90deg) rotateX(90deg)`,`background:${c.side};${sh(.85)}`)); // kiri (-x)
+  g.appendChild(face("",D,Hh,`translate3d(${W}px,0,0) rotateZ(90deg) rotateX(90deg)`,`background:${c.side};${sh(1)}`)); // kanan (+x)
+  world.appendChild(g);return g;
+}
+// panel tegak di dinding: wall 'N'(y=0) 'S'(y=L) 'W'(x=0) 'E'(x=P); pos = jarak sepanjang dinding (m), z bawah, w lebar, h tinggi
+// out=false: bidang menghadap ke DALAM ruang (tampak kalau dinding itu di sisi jauh kamera)
+// out=true : bidang menghadap ke LUAR (tampak kalau dinding itu di sisi dekat kamera)
+function wallPanel(wall,pos,z,w,h,cls,style,out){
+  const P=R.P,L=R.L,W=w*M,Hh=h*M,o=0.02*M;let tf;
+  const inN=`translate3d(${pos*M}px,${o}px,${(z+h)*M}px) rotateX(-90deg)`;
+  const inS=`translate3d(${(pos+w)*M}px,${L*M-o}px,${(z+h)*M}px) rotateZ(180deg) rotateX(-90deg)`;
+  const inW=`translate3d(${o}px,${(pos+w)*M}px,${(z+h)*M}px) rotateZ(-90deg) rotateX(-90deg)`;
+  const inE=`translate3d(${P*M-o}px,${pos*M}px,${(z+h)*M}px) rotateZ(90deg) rotateX(-90deg)`;
+  const outN=`translate3d(${(pos+w)*M}px,${-o}px,${(z+h)*M}px) rotateZ(180deg) rotateX(-90deg)`;
+  const outS=`translate3d(${pos*M}px,${L*M+o}px,${(z+h)*M}px) rotateX(-90deg)`;
+  const outW=`translate3d(${-o}px,${pos*M}px,${(z+h)*M}px) rotateZ(90deg) rotateX(-90deg)`;
+  const outE=`translate3d(${P*M+o}px,${(pos+w)*M}px,${(z+h)*M}px) rotateZ(-90deg) rotateX(-90deg)`;
+  tf=out?{N:outN,S:outS,W:outW,E:outE}[wall]:{N:inN,S:inS,W:inW,E:inE}[wall];
+  const e=face(cls,W,Hh,tf,style);world.appendChild(e);return e;
+}
+// perabot per fungsi (meter, relatif ke ruang). type 'noBlow' = jangan kena hembusan langsung; 'heat' = sumber panas
+function layout(q,P,L){
+  const F=[];const wood={top:"#b08a5e",side:"#8a6a46"},cloth={top:"#7a95b8",side:"#5f7a9d"},white={top:"#f5f3ec",side:"#dedbd1"},dark={top:"#4a4e55",side:"#2e3136"},metal={top:"#c3c8ce",side:"#9aa0a8"},green={top:"#7aa878",side:"#5c8a5a"};
+  const add=(x,y,w,d,h,c,t)=>F.push({x,y,w,d,h,c,t});
+  if(q===400){ // kamar tidur: kasur nempel dinding utara, lemari dinding barat, nakas
+    const bw=Math.min(1.8,P*0.4),bd=Math.min(2,L*0.45);add((P-bw)/2,0.1,bw,bd,0.5,wood,"noBlow");add((P-bw)/2+0.1,0.15,bw-0.2,bd-0.3,0.2,white);add((P-bw)/2+0.2,0.2,bw*0.4,0.4,0.1,cloth);
+    add((P-bw)/2+bw+0.15,0.1,0.5,0.5,0.55,wood);add(0.1,L*0.55,0.6,Math.min(1.6,L*0.3),2.1,wood);
+  }else if(q===450){ // ruang keluarga: sofa di selatan menghadap TV di utara
+    const sw=Math.min(2.4,P*0.5);add((P-sw)/2,L-0.95,sw,0.85,0.75,cloth,"noBlow");add((P-sw)/2-0.9,L-0.95-0.1,0.85,0.95,0.75,cloth,"noBlow");
+    add((P-sw)/2+0.3,L-2.0,sw-0.6,0.6,0.42,wood);
+    add((P-1.6)/2,0.1,1.6,0.45,0.5,wood);add((P-1.2)/2,0.1,1.2,0.08,1.0,dark,"heat");F[F.length-1].z=0.9;
+    add(P-0.6,0.2,0.45,0.45,1.1,green);
+  }else if(q===550){ // kantor: meja kerja menghadap dinding utara
+    const n=Math.max(1,Math.min(4,Math.floor(P/1.6)));const w=1.3,gap=(P-n*w)/(n+1);
+    for(let i=0;i<n;i++){const x=gap+i*(w+gap);add(x,0.1,w,0.7,0.75,white,"noBlow");add(x+0.45,0.15,0.4,0.05,0.4,dark);F[F.length-1].z=0.75;add(x+0.4,0.95,0.5,0.5,0.45,dark)}
+    add(0.1,L-1.0,0.5,0.9,1.3,metal);add(P-0.6,L-0.6,0.45,0.45,1.1,green);
+  }else if(q===600){ // toko: rak sepanjang dinding barat & utara, etalase tengah, kasir
+    const rk=Math.max(1,Math.floor((P-1)/1.2));for(let i=0;i<rk;i++)add(0.5+i*1.2,0.1,1.0,0.45,1.8,metal);
+    const rk2=Math.max(1,Math.floor((L-1.5)/1.2));for(let j=0;j<rk2;j++)add(0.1,1.0+j*1.2,0.45,1.0,1.8,metal);
+    add(P*0.45,L*0.45,Math.min(1.8,P*0.3),0.6,0.95,white);add(P-1.2,L-1.0,1.0,0.6,0.95,dark);
+  }else{ // restoran: meja makan grid, counter dinding utara
+    add(0.3,0.1,Math.min(2.4,P*0.45),0.6,1.0,wood,"heat");
+    const nx=Math.max(1,Math.floor((P-0.6)/1.8)),ny=Math.max(1,Math.floor((L-1.6)/1.8));
+    for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const x=0.5+i*1.8+((P-0.6)-nx*1.8)/2,y=1.4+j*1.8;add(x+0.3,y+0.3,0.8,0.8,0.75,wood);add(x+0.5,y-0.1,0.4,0.35,0.45,dark);add(x+0.5,y+1.15,0.4,0.35,0.45,dark)}
+  }
+  return F;
+}
+
+// orang = sprite SVG yang selalu menghadap kamera (billboard), berdiri di titik (x,y) lantai
+function person(x,y,skin,shirt,hair,hijab){
+  const hpx=1.65*M,wpx=0.6*M;
+  const d=document.createElement("div");d.className="person tag";d.style.cssText="position:absolute;transform-origin:0 0;background:none;padding:0";
+  d.dataset.tr=`translate3d(${(x+0.3)*M}px,${(y+0.15)*M}px,0)`;
+  d.innerHTML=`<svg width="${wpx}" height="${hpx}" viewBox="0 0 60 165" style="display:block;margin-left:${-wpx/2}px;margin-top:${-hpx}px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))">
+   <ellipse cx="30" cy="162" rx="16" ry="3" fill="rgba(0,0,0,.35)"/>
+   <rect x="19" y="100" width="9" height="58" rx="4" fill="#3a3f4a"/><rect x="32" y="100" width="9" height="58" rx="4" fill="#3a3f4a"/>
+   <rect x="16" y="155" width="13" height="7" rx="3" fill="#222"/><rect x="31" y="155" width="13" height="7" rx="3" fill="#222"/>
+   <path d="M14 58 q16 -10 32 0 l4 50 q-20 6 -40 0 z" fill="${shirt}"/>
+   <rect x="6" y="60" width="9" height="44" rx="4.5" fill="${shirt}"/><rect x="45" y="60" width="9" height="44" rx="4.5" fill="${shirt}"/>
+   <circle cx="10.5" cy="106" r="4.5" fill="${skin}"/><circle cx="49.5" cy="106" r="4.5" fill="${skin}"/>
+   <rect x="25" y="44" width="10" height="12" fill="${skin}"/>
+   <circle cx="30" cy="32" r="16" fill="${skin}"/>
+   ${hijab?`<path d="M14 32 a16 16 0 0 1 32 0 v10 q-16 14 -32 0 z" fill="${hair}" opacity=".95"/><circle cx="30" cy="33" r="11.5" fill="${skin}"/>`:`<path d="M14 30 a16 16 0 0 1 32 0 v4 q-16 -12 -32 0 z" fill="${hair}"/>`}
+   <circle cx="25" cy="34" r="1.4" fill="#222"/><circle cx="35" cy="34" r="1.4" fill="#222"/><path d="M26 40 q4 3 8 0" stroke="#7a4a3a" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  </svg>`;
+  world.appendChild(d);
+}
+// pilih dinding AC: skor tiap dinding
+function placeAC(F,n){
+  const P=R.P,L=R.L;const walls={N:{len:P,ext:true},W:{len:L,ext:R.fs>1},S:{len:P,ext:false},E:{len:L,ext:false}};
+  const door={wall:"S",pos:P-1.1,w:0.9};
+  const score={};const why={};
+  for(const k in walls){let s=0;const w=[];
+    if(walls[k].ext){s+=2;w.push("dinding luar, pipa pendek")}
+    if(walls[k].len>=Math.max(P,L))s+=1;
+    if(k===door.wall){s-=2;w.push("ada pintu")}
+    // hembusan langsung: perabot noBlow yang berada di tengah bentang dinding dan dekat dinding itu
+    for(const f of F){if(f.t!=="noBlow")continue;const cx=f.x+f.w/2,cy=f.y+f.d/2;
+      const near=k==="N"?cy<L*0.5:k==="S"?cy>L*0.5:k==="W"?cx<P*0.5:cx>P*0.5;
+      const mid=(k==="N"||k==="S")?Math.abs(cx-P/2)<P*0.3:Math.abs(cy-L/2)<L*0.3;
+      if(near&&mid){s-=3;w.push("hembusan langsung ke "+(R.q===400?"tempat tidur":R.q===450?"sofa":"meja kerja"));break}}
+    for(const f of F){if(f.t!=="heat")continue;const cx=f.x+f.w/2,cy=f.y+f.d/2;
+      const near=k==="N"?cy<1.2:k==="S"?cy>L-1.2:k==="W"?cx<1.2:cx>P-1.2;if(near){s-=1;w.push("dekat sumber panas")}}
+    score[k]=s;why[k]=w}
+  const order=Object.keys(walls).sort((a,b)=>score[b]-score[a]);
+  const out=[];
+  if(n===1)out.push({wall:order[0],pos:walls[order[0]].len/2});
+  else if(n===2){let a=order[0],b=order.find(k=>k!==a&&k!==opp(a))||order[1];if(score[opp(a)]>=score[b]-1)b=opp(a);out.push({wall:a,pos:walls[a].len/2},{wall:b,pos:walls[b].len/2})}
+  else{const a=order[0];const la=walls[a].len;for(let i=0;i<n-1;i++)out.push({wall:a,pos:la*(i+1)/n});out.push({wall:order[1],pos:walls[order[1]].len/2})}
+  return {out,why,order};
+}
+const opp=k=>({N:"S",S:"N",W:"E",E:"W"})[k];
+const WALLNAME={N:"dinding belakang (utara)",S:"dinding depan (selatan, sisi pintu)",W:"dinding kiri (barat)",E:"dinding kanan (timur)"};
+function buildRoom(){
+  const P=R.P,L=R.L,H=R.H;M=Math.max(20,Math.min(46,260/Math.max(P,L)));
+  world.innerHTML="";world.style.setProperty("--m",M+"px");
+  // lantai
+  world.appendChild(face("floor",P*M,L*M,`translate3d(0,0,0)`));
+  // dinding: N dan W penuh, S dan E transparan (biar kelihatan dalamnya)
+  const wallH=H*M,th=0.12*M;
+  world.appendChild(face("wall",P*M,wallH,`translate3d(0,0,0) rotateX(90deg)`,"transform-origin:0 0;transform:translate3d(0,0,"+wallH+"px) rotateX(-90deg) rotateY(180deg) translate3d(-"+P*M+"px,0,0)"));
+  // sederhana: dinding sebagai panel tegak menghadap ke dalam
+  world.lastChild.remove();
+  // tiap dinding: bidang dalam penuh (tampak saat di sisi jauh) + bidang luar rendah transparan (saat di sisi dekat)
+  for(const k of ["N","S","W","E"]){const len=(k==="N"||k==="S")?P:L;wallPanel(k,0,0,len,H,"wall");wallPanel(k,0,0,len,H*0.3,"wall ghost",null,true)}
+  // jendela utara (+ barat kalau kena matahari sore), pintu selatan
+  wallPanel("N",P*0.6,0.9,Math.min(1.6,P*0.3),1.2,"win");
+  if(R.fs>1)wallPanel("W",L*0.3,0.9,Math.min(1.6,L*0.3),1.2,"win");
+  wallPanel("S",P-1.1,0,0.9,2.1,"door");
+  // perabot
+  const F=layout(R.q,P,L);for(const f of F)box(f.x,f.y,f.z||0,f.w,f.d,f.h,f.c);
+  // orang: berdiri di area kosong (depan-kanan)
+  const N=Math.min(R.org,12);const skin=["#e9b36a","#c98a4a","#f1c9a0","#b87b4a"];
+  const shirt=["#5f7a9d","#c0564a","#4f8a6b","#d9a441","#7a5fa0","#3f8fbf"],hair=["#2b1d14","#3b2a1a","#111","#4a3626"];
+  for(let i=0;i<N;i++){const col=i%4,row=Math.floor(i/4);const x=P*0.35+col*(P*0.5/4)+((row%2)?0.3:0),y=L*0.45+row*0.75;if(y>L-0.5)break;
+    person(x,y,skin[i%4],shirt[i%6],hair[i%4],i%3===1)}
+  // AC
+  const pl=placeAC(F,R.n);R.place=pl;
+  pl.out.forEach((a,i)=>{const w=0.9,h=0.3,z=H-0.45;const pos=a.pos-w/2;
+    const e=wallPanel(a.wall,pos,z,w,h,"",`background:linear-gradient(180deg,#fbfaf6,#dedbd1);border-radius:3px;box-shadow:0 2px 0 #b9b6ad;backface-visibility:visible;-webkit-backface-visibility:visible`);
+    const led=document.createElement("i");led.className="led";e.appendChild(led);
+    // label
+    const t=document.createElement("div");t.className="tag";t.textContent=R.units[i][0]+(mode==="inv"?" inv":"");t.dataset.tr=`translate3d(${a.wall==="N"?pos*M:a.wall==="S"?pos*M:a.wall==="W"?0:P*M}px,${a.wall==="W"||a.wall==="E"?pos*M:a.wall==="N"?0:L*M}px,${(H+0.15)*M}px)`;world.appendChild(t);
+    // kerucut udara dingin: bidang miring dari AC ke tengah ruang
+    const len=Math.min(L,P)*0.55*M;const cone=document.createElement("div");cone.className="f cone";cone.style.backfaceVisibility="visible";cone.style.webkitBackfaceVisibility="visible";cone.style.width=w*1.6*M+"px";cone.style.height=len+"px";
+    let tf;const cx=a.wall==="N"||a.wall==="S"?(a.pos-w*0.8)*M:(a.wall==="W"?0.05*M:(P-0.05)*M);
+    if(a.wall==="N")tf=`translate3d(${cx}px,${0.1*M}px,${z*M}px) rotateX(-50deg)`;
+    else if(a.wall==="S")tf=`translate3d(${cx+w*1.6*M}px,${(L-0.1)*M}px,${z*M}px) rotateZ(180deg) rotateX(-50deg)`;
+    else if(a.wall==="W")tf=`translate3d(${0.1*M}px,${(a.pos+w*0.8)*M}px,${z*M}px) rotateZ(-90deg) rotateX(-50deg)`;
+    else tf=`translate3d(${(P-0.1)*M}px,${(a.pos-w*0.8)*M}px,${z*M}px) rotateZ(90deg) rotateX(-50deg)`;
+    cone.style.setProperty("--t",tf);cone.style.transform=tf;world.appendChild(cone);
+  });
+  // label ukuran
+  const lp=document.createElement("div");lp.className="lbl";lp.textContent=nf(P,1)+" m";lp.style.transform=`translate3d(${P*M/2-14}px,${(L+0.35)*M}px,0)`;world.appendChild(lp);
+  const ll=document.createElement("div");ll.className="lbl";ll.textContent=nf(L,1)+" m";ll.style.transform=`translate3d(${(P+0.3)*M}px,${L*M/2+14}px,0) rotateZ(-90deg)`;world.appendChild(ll);
+  // MCB di dinding selatan dekat pintu
+  wallPanel("S",0.3,1.3,0.3,0.4,"",`background:#dcdad2;border:1px solid #9a988f`);
+  setCam();
+  $("#watt").textContent=playing?nf(mode==="inv"?R.wInv:R.wNon)+" W":"0 W";
+  // teks penempatan
+  const u=R.units;const lines=pl.out.map((a,i)=>`<b>${u[i][0]}</b> di ${WALLNAME[a.wall]}, ± ${nf(a.pos,1)} m dari sudut`);
+  const avoid=Object.entries(pl.why).filter(([k,w])=>!pl.out.some(a=>a.wall===k)&&w.some(x=>x.startsWith("hembusan")||x==="ada pintu")).map(([k,w])=>WALLNAME[k].split(" (")[0]+" dihindari: "+w.filter(x=>x!=="dinding luar, pipa pendek").join(", "));
+  $("#place").innerHTML="<b>Posisi AC:</b> "+lines.join("; ")+"."+(avoid.length?" <span style='color:#a3a29c'>"+avoid.join(". ")+".</span>":"")+(R.n>1?" <span style='color:#a3a29c'>Dua sisi berbeda supaya dingin merata dan ada cadangan saat satu unit dicuci.</span>":"");
+}
+/* ---------- animasi ---------- */
+function startAnim(){
+  playing=true;world.classList.add("on");$("#play").textContent="Matikan AC";
+  const r=R;const t0=performance.now();const T0=31,T1=mode==="inv"?24.8:25.2;
+  const dur=(mode==="inv"?9000:12000)*Math.sqrt(r.Q/r.cap);
+  if(anim)cancelAnimationFrame(anim);
+  const loop=now=>{const k=Math.min(1,(now-t0)/dur);const e=1-Math.pow(1-k,2);const ph=(now-t0-dur)/1000;
+    let T=T0+(T1-T0)*e;
+    if(k>=1)T=mode==="inv"?T1+Math.sin(ph*1.2)*0.2:T1+((ph%6)<3.3?0.9-(ph%6)*0.27:(ph%6-3.3)*0.33);
+    $("#temp").textContent=nf(T,1)+" °C";
+    $("#tint").style.background=`radial-gradient(60% 50% at 50% 60%,rgba(${Math.round(242-184*e)},${Math.round(140+20*e)},${Math.round(40+215*e)},${0.32-0.06*e}),rgba(0,0,0,0))`;
+    let w=mode==="inv"?r.wInv*(k<1?1:0.45+0.1*Math.sin(ph*1.2)):r.wNon*(k<1?1:((ph%6)<3.3?1:0.03));
+    $("#watt").textContent=nf(Math.round(w/10)*10)+" W";$("#meterLbl").textContent=k<1?"Listrik saat mendinginkan":(mode==="inv"?"Listrik saat suhu stabil":"Listrik saat kompresor "+(w>50?"nyala":"mati"));
+    anim=requestAnimationFrame(loop)};
+  anim=requestAnimationFrame(loop);
+}
+function stopAnim(){playing=false;world.classList.remove("on");$("#play").textContent="Nyalakan AC";if(anim)cancelAnimationFrame(anim);$("#temp").textContent="31,0 °C";$("#tint").style.background="";$("#watt").textContent="0 W";$("#meterLbl").textContent="Listrik AC saat ini"}
+
+/* ---------- hasil ---------- */
+function render(){
+  const r=R;const win=r.payback<=60&&r.selisih>0;const hemat5=r.selisih*60-r.extra;
+  let h='<h2><span class="step">3</span>Hasil</h2>';
+  h+=(r.kurang?'<p class="hint" style="color:var(--bad);margin:0 0 8px"><b>Kapasitas kurang:</b> '+nm(r.units)+' = '+nf(r.cap)+' BTU/jam, di bawah beban '+nf(r.Q)+' BTU/jam. Tambah jumlah unit atau pilih Otomatis.</p>':'')+'<div class="big">'+
+   '<div><small>AC yang '+(r.nman?'dipilih':'disarankan')+'</small><strong>'+nm(r.units)+'</strong><em>± '+nf(r.cap)+' BTU/jam untuk beban '+nf(r.Q)+' BTU/jam</em></div>'+
+   '<div><small>MCB khusus AC</small><strong>'+r.mcb+' A</strong><em>kabel NYM 3×2,5 mm², 1 jalur sendiri</em></div></div>';
+  h+='<div class="vs">'+
+   '<div class="card'+(win?'':' win')+'"><h3>AC biasa (non-inverter)</h3><div class="rp">'+rp(r.bNon)+'</div><div class="sub">per bulan · '+nf(r.kwhNon)+' kWh</div><div class="comp onoff"><i></i></div><div class="sub">kompresor mati-nyala</div><div class="sub" style="margin-top:6px">Harga ± '+rp(r.hNon)+'</div></div>'+
+   '<div class="card'+(win?' win':'')+'"><h3>AC inverter</h3><div class="rp">'+rp(r.bInv)+'</div><div class="sub">per bulan · '+nf(r.kwhInv)+' kWh</div><div class="comp inv"><i></i></div><div class="sub">kompresor melambat, stabil</div><div class="sub" style="margin-top:6px">Harga ± '+rp(r.hInv)+'</div></div></div>';
+  let pb='<div class="payback">';
+  if(r.extra<=0&&r.selisih>0)pb+='<span class="chip ok">Inverter lebih untung</span><br>Harga inverter yang diisi sama atau lebih murah, dan listriknya hemat <b>'+rp(r.selisih)+'/bulan</b>.';
+  else if(r.selisih>0&&isFinite(r.payback))pb+='<span class="chip '+(win?'ok':'')+'">'+(win?'Inverter lebih untung':'Inverter balik modalnya lama')+'</span><br>Inverter lebih mahal <b>'+rp(r.extra)+'</b> di awal, tapi hemat <b>'+rp(r.selisih)+'/bulan</b>. Balik modal sekitar <strong>'+(r.payback<1?'kurang dari 1 bulan':nf(r.payback,1)+' bulan'+(r.payback>=12?' (± '+nf(r.payback/12,1)+' tahun)':''))+'</strong>.'+(hemat5>0?' Dalam 5 tahun total lebih hemat ± <b>'+rp(hemat5)+'</b>.':' Dalam 5 tahun belum balik modal, cocok kalau AC jarang dipakai.');
+  else pb+='Dengan CSPF yang dipilih, AC biasa dan inverter listriknya sama. Pilih berdasarkan harga dan garansi.';
+  h+=pb+'</div>';
+  const pl=r.place;const posTxt=pl.out.map((a,i)=>r.units[i][0]+' di '+WALLNAME[a.wall]).join(', ');
+  h+='<div class="why"><h3>Kenapa segitu?</h3><ol>'+
+   '<li>'+r.fl+' '+nf(r.P,1)+' × '+nf(r.L,1)+' m = <b>'+nf(r.A,1)+' m²</b> menyumbang panas ± <b>'+nf(r.qRuang)+' BTU/jam</b>'+(r.fs>1?', ditambah 10% karena dinding kena matahari sore':'')+(r.fa>1?', ditambah 15% karena langsung di bawah atap':'')+'. '+nf(r.org)+' orang ± '+nf(r.qOrg)+' dan alat '+nf(r.Wa)+' W ± '+nf(r.qAlat)+' BTU/jam. Total <b>'+nf(r.Q)+' BTU/jam</b>, jadi butuh <b>'+nm(r.units)+'</b>.</li>'+
+   '<li><b>Posisi AC</b>: '+posTxt+'. Aturannya: unit indoor di dinding luar supaya pipa pendek dan outdoor gampang, hembusan tidak langsung ke tempat tidur / sofa / meja kerja, tidak di atas pintu, jauh dari sumber panas. Kalau 2 unit, taruh di dua sisi berbeda supaya dingin merata.</li>'+
+   '<li><b>CSPF</b> adalah angka di label hemat energi (bintang) di unit AC: berapa panas yang dibuang untuk tiap 1 watt listrik, dihitung sepanjang musim. CSPF 4,2 artinya tiap 1 kWh listrik membuang 4,2 kWh panas. Makin tinggi makin irit.</li>'+
+   '<li>Listrik sebulan = beban rata-rata ('+nf(r.kWth*LOAD_AVG,2)+' kW termal, ± '+Math.round(LOAD_AVG*100)+'% dari beban puncak sore) × '+nf(r.jam,1)+' jam × 30 hari ÷ CSPF. AC biasa CSPF '+nf(r.cNon,2)+' → '+nf(r.kwhNon)+' kWh; inverter CSPF '+nf(r.cInv,2)+' → '+nf(r.kwhInv)+' kWh. Dikali tarif Rp '+nf(r.tarif,2)+'/kWh.</li>'+
+   '<li>Yang paling menentukan tagihan bukan merek, tapi <b>jam pakai</b> dan <b>suhu yang disetel</b>. Setel 24–25 °C; tiap 1 °C lebih dingin kira-kira 5–7% lebih boros.</li>'+
+   '<li>MCB '+r.mcb+' A dihitung dari arus AC biasa ± '+nf(r.wNon/220/0.85,1)+' A × 1,25, satu jalur khusus dari panel (PUIL 2020).</li></ol>'+
+   '<div class="calc">Beban       = '+nf(r.A,1)+' m² × '+r.q+(r.fs>1?' × 1,1':'')+(r.fa>1?' × 1,15':'')+' + '+nf(r.org)+'×450 + '+nf(r.Wa)+'×3,412 = '+nf(r.Q)+' BTU/jam\nkWh/bulan   = '+nf(r.kWth,2)+' kW × '+LOAD_AVG+' × '+nf(r.jam,1)+' jam × 30 ÷ CSPF\n  AC biasa  = ÷ '+nf(r.cNon,2)+' = '+nf(r.kwhNon)+' kWh → '+rp(r.bNon)+'\n  Inverter  = ÷ '+nf(r.cInv,2)+' = '+nf(r.kwhInv)+' kWh → '+rp(r.bInv)+'\nBalik modal = ('+rp(r.hInv)+' − '+rp(r.hNon)+') ÷ '+rp(r.selisih)+' = '+(isFinite(r.payback)?nf(r.payback,1)+' bulan':'-')+'</div>'+
+   '<p class="ref"><b>Acuan:</b> beban pendingin perkiraan cepat ruang tunggal, kondisi ruang ±25 °C (SNI 6390:2020). Posisi AC mengikuti praktik pemasangan umum, cek jalur pipa dan tempat outdoor di lapangan. Label hemat energi AC (Kementerian ESDM): Permen ESDM 57/2017 memakai EER (bintang 1–4 mulai 8,53 / 9,01 / 9,96 / ≥10,41 Btu/jam per W); sejak 2021–2023 SKEM beralih ke CSPF dengan minimum 3,4 (Kepmen ESDM Okt 2023, maksimal 4 bintang). Angka CSPF tiap bintang di pilihan ini perkiraan; ketik angka CSPF dari label unit untuk hasil yang lebih tepat. Harga unit dan BTU per PK angka umum pasaran. Tarif PLN Triwulan IV 2026, cek PLN Mobile.</p></div>';
+  h+='<div class="actions"><button class="primary" id="cp">Salin hasil untuk WhatsApp</button><span class="toast" id="toast"></span></div>';
+  $("#res").innerHTML=h;
+  $("#cp").addEventListener("click",()=>{
+    const t="*Simulasi AC* (MEP-Kit)\n\nRuang: "+r.fl+", "+nf(r.P,1)+" × "+nf(r.L,1)+" m ("+nf(r.A,1)+" m²), "+nf(r.org)+" orang, pakai "+nf(r.jam,1)+" jam/hari\nBeban: ± "+nf(r.Q)+" BTU/jam → *"+nm(r.units)+"*\nPosisi: "+posTxt+"\nMCB khusus AC: "+r.mcb+" A\n\nAC biasa (CSPF "+nf(r.cNon,2)+"): ± "+rp(r.bNon)+"/bulan, harga ± "+rp(r.hNon)+"\nAC inverter (CSPF "+nf(r.cInv,2)+"): ± "+rp(r.bInv)+"/bulan, harga ± "+rp(r.hInv)+"\nHemat ± "+rp(r.selisih)+"/bulan, balik modal ± "+(isFinite(r.payback)?nf(r.payback,1)+" bulan":"-")+"\n\nAcuan: SNI 6390:2020, label hemat energi ESDM (CSPF), tarif PLN Tw IV 2026. Perkiraan awal, cek & ricek.";
+    navigator.clipboard?.writeText(t).then(()=>{$("#toast").textContent="Tersalin ✓";setTimeout(()=>$("#toast").textContent="",2000)}).catch(()=>{$("#toast").textContent="Salin manual: tekan lama teks"});
+  });
+}
+calc();
+</script>
+</body>
+</html>

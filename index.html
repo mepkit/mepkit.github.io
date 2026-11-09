@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kalkulator gratis MEP-Kit: daya PLN, titik lampu, kapasitas AC, ukuran kabel dan MCB. Lengkap dengan alasan bahasa awam dan acuan PUIL 2020 / SNI.">
+<meta name="theme-color" content="#1d1f22">
+<meta property="og:title" content="Hitung Cepat MEP-Kit">
+<meta property="og:description" content="Daya PLN, titik lampu, AC, kabel & MCB. Gratis, lengkap dengan alasannya.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f5c518'/%3E%3Cpath d='M18 4 8 18h7l-2 10 11-15h-7z' fill='%231d1f22'/%3E%3C/svg%3E">
+<title>Hitung Cepat MEP-Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: pita gelap bergaya label panel listrik di atas, tab per kalkulator, kolom isian lalu kartu hasil "lembar hitungan" */
+:root{
+  --bg:#efeee9; --surface:#ffffff; --ink:#1d1f22; --muted:#5d5f63; --line:#d6d4cc;
+  --accent:#f5c518; --accent-ink:#1d1f22; --band:#1d1f22; --band-ink:#f3f1ea;
+  --ok:#1f7a4d; --warn:#a86400; --bad:#b3261e; --soft:#f7f1d6;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17181a; --surface:#222428; --ink:#ecebe6; --muted:#a3a39d; --line:#3a3c40;
+  --accent:#f5c518; --accent-ink:#1d1f22; --band:#0f1011; --band-ink:#f3f1ea;
+  --ok:#5cc28f; --warn:#e2a54a; --bad:#f08a80; --soft:#2c2a1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17181a; --surface:#222428; --ink:#ecebe6; --muted:#a3a39d; --line:#3a3c40;
+  --accent:#f5c518; --accent-ink:#1d1f22; --band:#0f1011; --band-ink:#f3f1ea;
+  --ok:#5cc28f; --warn:#e2a54a; --bad:#f08a80; --soft:#2c2a1f; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--band)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--band);color:var(--band-ink)}
+header .wrap{padding-block:20px 0}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;letter-spacing:.02em}
+.bolt{width:30px;height:30px;border-radius:6px;background:var(--accent);display:grid;place-items:center}
+.bolt svg{width:16px;height:16px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,6vw,36px);line-height:1.1;margin:14px 0 6px;text-wrap:balance}
+.lede{color:#c9c7bf;margin:0 0 16px;max-width:60ch}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs a{flex:0 0 auto;padding:10px 14px;border-radius:8px 8px 0 0;color:#c9c7bf;text-decoration:none;font-weight:600;font-size:14px;border:1px solid transparent;border-bottom:0}
+.tabs a[aria-current="page"]{background:var(--bg);color:var(--ink)}
+.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tabs .soon{font-size:11px;font-family:var(--f-mono);background:#3a3c40;color:#ddd;padding:1px 6px;border-radius:4px;margin-left:6px}
+main .wrap{padding-block:20px 40px;display:grid;gap:18px}
+section[data-view]{display:grid;gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px;min-width:0}
+.panel h2{font-family:var(--f-display);font-size:18px;margin:0;display:flex;align-items:center;gap:8px}
+.step{font-family:var(--f-mono);font-size:12px;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:1px 7px}
+.hint{color:var(--muted);font-size:13px;margin:0}
+input:disabled,select:disabled{opacity:.45;cursor:not-allowed}
+.lock{display:block;color:var(--muted);font-size:11.5px;margin-top:4px}
+.ex{font-size:12px;font-family:var(--f-mono);color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:1px 6px;margin-left:auto;white-space:nowrap}
+label{font-weight:600;font-size:13px;display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+input,select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.unit{position:relative}.unit input{padding-right:42px}
+.unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-family:var(--f-mono);pointer-events:none}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;font-weight:600}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:6px 8px}
+.loads{display:grid;gap:8px}
+.load{display:grid;grid-template-columns:minmax(0,1fr) 84px 64px 34px;gap:6px;align-items:center}
+.load input,.load select{padding:7px 8px;font-size:15px}
+.loadhead{display:grid;grid-template-columns:minmax(0,1fr) 84px 64px 34px;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.addrow select{flex:1 1 220px;width:auto}
+/* Kartu hasil */
+.result{border:2px solid var(--ink);border-radius:10px;background:var(--surface);overflow:hidden}
+.result .top{background:var(--accent);color:var(--accent-ink);padding:12px 16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.result .top b{font-family:var(--f-display);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.result .top span{font-family:var(--f-mono);font-size:12px}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:1px;background:var(--line)}
+.big div{background:var(--surface);padding:12px 16px}
+.big small{display:block;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.big strong{font-family:var(--f-mono);font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
+.big em{font-style:normal;font-size:13px;color:var(--muted);display:block}
+.why{padding:14px 16px;display:grid;gap:10px;border-top:1px solid var(--line)}
+.why h3{margin:0;font-family:var(--f-display);font-size:15px}
+.why p,.why li{margin:0;max-width:65ch}
+.why ol,.why ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.calc{font-family:var(--f-mono);font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px 12px;overflow-x:auto;white-space:pre;line-height:1.6}
+.ref{font-size:13px;color:var(--muted)}
+.ref b{color:var(--ink)}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.chip.ok{color:var(--ok)}.chip.warn{color:var(--warn)}.chip.bad{color:var(--bad)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 16px}
+.toast{font-size:13px;color:var(--ok);align-self:center}
+.plan{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px;overflow-x:auto}
+.plan svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.soonbox{background:var(--soft);border:1px dashed var(--warn);border-radius:10px;padding:16px}
+.soonbox h2{margin:0 0 6px;font-family:var(--f-display);font-size:18px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.opt{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:6px;background:var(--bg);min-width:0}
+.opth{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pm{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:14px}
+.pm li{padding-left:20px;position:relative}
+.pm li::before{position:absolute;left:0;font-weight:700;font-family:var(--f-mono)}
+.pm li.p::before{content:"+";color:var(--ok)}.pm li.m::before{content:"−";color:var(--bad)}
+footer{border-top:1px solid var(--line)}
+footer .wrap{padding-block:18px 28px;display:grid;gap:8px;font-size:13px;color:var(--muted)}
+footer a{color:var(--ink);font-weight:600}
+.cta{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--band);color:var(--band-ink);border-radius:10px;padding:14px 16px}
+.cta p{margin:0;max-width:46ch}
+.cta a{background:var(--accent);color:var(--accent-ink);text-decoration:none;padding:9px 14px;border-radius:7px;font-weight:700}
+@media (max-width:420px){.big div{padding:10px 10px}.big strong{font-size:18px}.load,.loadhead{grid-template-columns:minmax(0,1fr) 70px 52px 30px}}
+@media (prefers-reduced-motion:no-preference){.result{transition:box-shadow .2s}}
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="wrap">
+    <div class="brand"><span class="bolt"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 0 2 9h5l-1.5 7L14 6.5H9z" fill="#1d1f22"/></svg></span>MEP-Kit</div>
+    <h1>Hitung cepat, lengkap dengan alasannya</h1>
+    <p class="lede">Isi data ruangan atau alat listrik. Hasilnya keluar bersama penjelasan bahasa awam dan acuan standar, siap dikirim ke owner atau kontraktor.</p>
+    <nav class="tabs" aria-label="Pilih kalkulator">
+      <a href="#daya" data-tab="daya">Kebutuhan daya PLN</a>
+      <a href="#lampu" data-tab="lampu">Jumlah titik lampu</a>
+      <a href="#ac" data-tab="ac">Kebutuhan AC</a>
+      <a href="#kabel" data-tab="kabel">Kabel &amp; MCB</a>
+    </nav>
+  </div>
+</header>
+
+<main><div class="wrap">
+
+<!-- ===================== DAYA ===================== -->
+<section data-view="daya">
+  <div class="panel">
+    <h2><span class="step">1</span>Daftar alat listrik <span class="ex">contoh rumah</span></h2>
+    <p class="hint">Ubah watt dan jumlah sesuai alat yang dipakai. Watt bisa dilihat di stiker belakang alat atau di brosur.</p>
+    <div class="loadhead"><span>Alat</span><span>Watt / unit</span><span>Jumlah</span><span></span></div>
+    <div class="loads" id="loads"></div>
+    <div class="addrow">
+      <select id="preset" aria-label="Pilih alat untuk ditambahkan"></select>
+      <button id="addLoad" type="button">+ Tambah alat</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="step">2</span>Kondisi pemakaian</h2>
+    <div class="grid2">
+      <div>
+        <label for="fk">Alat nyala bersamaan</label>
+        <select id="fk">
+          <option value="0.7">Rumah tinggal (±70% nyala bareng)</option>
+          <option value="0.8">Ruko / kantor kecil (±80%)</option>
+          <option value="1">Semua nyala bersamaan (100%)</option>
+        </select>
+      </div>
+      <div>
+        <label for="spare">Cadangan untuk tambah alat nanti</label>
+        <select id="spare">
+          <option value="0">Tanpa cadangan</option>
+          <option value="0.1">10%</option>
+          <option value="0.2" selected>20% (disarankan)</option>
+          <option value="0.25">25%</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="result" id="resDaya" aria-live="polite"></div>
+</section>
+
+<!-- ===================== LAMPU ===================== -->
+<section data-view="lampu" hidden>
+  <div class="panel">
+    <h2><span class="step">1</span>Data ruangan <span class="ex">contoh ruang kerja</span></h2>
+    <div class="grid2">
+      <div style="grid-column:1/-1">
+        <label for="fungsi">Fungsi ruang</label>
+        <select id="fungsi"></select>
+      </div>
+      <div><label for="pj">Panjang ruang</label><div class="unit"><input id="pj" type="number" inputmode="decimal" min="0.5" step="0.1" value="5"><span>m</span></div></div>
+      <div><label for="lb">Lebar ruang</label><div class="unit"><input id="lb" type="number" inputmode="decimal" min="0.5" step="0.1" value="4"><span>m</span></div></div>
+      <div><label for="tp">Tinggi plafon</label><div class="unit"><input id="tp" type="number" inputmode="decimal" min="2" step="0.05" value="3"><span>m</span></div></div>
+      <div><label for="tk">Tinggi meja kerja</label><div class="unit"><input id="tk" type="number" inputmode="decimal" min="0" step="0.05" value="0.75"><span>m</span></div></div>
+    </div>
+    <p class="hint">Tinggi meja kerja biasanya 0,75 m. Untuk koridor, gudang, atau parkir isi 0 (diukur di lantai).</p>
+  </div>
+  <div class="panel">
+    <h2><span class="step">2</span>Lampu yang dipakai</h2>
+    <div class="grid2">
+      <div style="grid-column:1/-1"><label for="lampu">Jenis lampu</label><select id="lampu"></select></div>
+      <div><label for="lm">Cahaya per lampu</label><div class="unit"><input id="lm" type="number" inputmode="numeric" min="50" step="10"><span>lm</span></div></div>
+      <div><label for="w">Daya per lampu</label><div class="unit"><input id="w" type="number" inputmode="decimal" min="1" step="1"><span>W</span></div></div>
+    </div>
+    <p class="hint">Angka lumen (lm) ada di kardus atau brosur lampu. Kalau merek lain, ganti angkanya di sini.</p>
+  </div>
+  <div class="result" id="resLampu" aria-live="polite"></div>
+</section>
+
+<!-- ===================== AC ===================== -->
+<section data-view="ac" hidden>
+  <div class="panel">
+    <h2><span class="step">1</span>Data ruangan <span class="ex">contoh kamar tidur</span></h2>
+    <div class="grid2">
+      <div style="grid-column:1/-1">
+        <label for="acf">Fungsi ruang</label>
+        <select id="acf">
+          <option value="400">Kamar tidur</option>
+          <option value="450">Ruang keluarga / ruang tamu</option>
+          <option value="550">Ruang kerja / kantor</option>
+          <option value="600">Toko / ruang pamer</option>
+          <option value="650">Restoran / kafe</option>
+        </select>
+      </div>
+      <div><label for="acp">Panjang ruang</label><div class="unit"><input id="acp" type="number" inputmode="decimal" min="0.5" step="0.1" value="4"><span>m</span></div></div>
+      <div><label for="acl">Lebar ruang</label><div class="unit"><input id="acl" type="number" inputmode="decimal" min="0.5" step="0.1" value="3"><span>m</span></div></div>
+      <div><label for="act">Tinggi plafon</label><div class="unit"><input id="act" type="number" inputmode="decimal" min="2" step="0.05" value="3"><span>m</span></div></div>
+      <div><label for="aco">Jumlah orang</label><div class="unit"><input id="aco" type="number" inputmode="numeric" min="0" step="1" value="2"><span>org</span></div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2><span class="step">2</span>Kondisi ruang</h2>
+    <div class="grid2">
+      <div>
+        <label for="acs">Kena matahari langsung?</label>
+        <select id="acs">
+          <option value="1">Tidak / kena pagi saja</option>
+          <option value="1.1">Dinding kena matahari sore (barat)</option>
+        </select>
+      </div>
+      <div>
+        <label for="aca">Posisi ruang</label>
+        <select id="aca">
+          <option value="1">Ada ruang / lantai di atasnya</option>
+          <option value="1.15">Langsung di bawah atap</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1"><label for="acw">Alat yang mengeluarkan panas (komputer, TV, kulkas)</label><div class="unit"><input id="acw" type="number" inputmode="numeric" min="0" step="10" value="100"><span>W</span></div></div>
+    </div>
+    <p class="hint">Isi total watt alat yang biasa nyala di ruang itu. Lampu LED sudah dihitung di angka per m².</p>
+    <p class="hint"><b>Jangkauan:</b> untuk ruang tunggal sampai 100 m² dengan plafon sampai 4 m (kamar, kantor kecil, toko, kafe) yang pakai AC split dinding atau cassette. Ruang lebih besar atau lebih tinggi butuh perhitungan khusus.</p>
+  </div>
+  <div class="result" id="resAC" aria-live="polite"></div>
+</section>
+
+<!-- ===================== KABEL ===================== -->
+<section data-view="kabel" hidden>
+  <div class="panel">
+    <h2><span class="step">1</span>Beban yang dilayani <span class="ex">contoh AC 2 PK</span></h2>
+    <div class="grid2">
+      <div style="grid-column:1/-1"><label for="kjenis">Jenis beban</label><select id="kjenis"></select></div>
+      <div><label for="kfasa">Sistem</label><select id="kfasa"><option value="1">1 fasa, 220 V</option><option value="3">3 fasa, 380 V</option></select></div>
+      <div><label for="kdaya">Daya beban</label><div class="unit"><input id="kdaya" type="number" inputmode="numeric" min="0" step="50" value="1800"><span>W</span></div><small class="lock" id="kdaya-lock" hidden>terkunci, pakai arus · kosongkan arus untuk isi daya</small></div>
+      <div><label for="kpf">Faktor daya (cos φ)</label><input id="kpf" type="number" inputmode="decimal" min="0.5" max="1" step="0.05" value="0.9"></div>
+      <div><label for="kamp">Atau isi arus langsung</label><div class="unit"><input id="kamp" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kosongkan"><span>A</span></div><small class="lock" id="kamp-lock" hidden>terkunci, pakai daya · kosongkan daya untuk isi arus</small></div>
+    </div>
+    <p class="hint">Kalau arus beban sudah diketahui (dari nameplate atau tang ampere), isi di kolom arus (kolom daya otomatis terkunci). Mau isi daya lagi? Kosongkan kolom arus. Cos φ: lampu/alat elektronik ±0,9; motor, AC, pompa ±0,85.</p>
+  </div>
+  <div class="panel">
+    <h2><span class="step">2</span>Jalur kabel</h2>
+    <div class="grid2">
+      <div style="grid-column:1/-1"><label for="kpasang">Jenis kabel dan cara pasang</label><select id="kpasang"></select></div>
+      <div><label for="kpanjang">Panjang kabel (panel ke beban)</label><div class="unit"><input id="kpanjang" type="number" inputmode="decimal" min="1" step="1" value="25"><span>m</span></div></div>
+      <div><label for="ksuhu">Suhu sekitar</label><select id="ksuhu"><option value="25">25 °C (ruang ber-AC)</option><option value="30">30 °C</option><option value="35" selected>35 °C (umum di Indonesia)</option><option value="40">40 °C (plafon / ruang panas)</option><option value="45">45 °C (dekat mesin / atap seng)</option></select></div>
+      <div><label for="kgrup">Kabel sirkit lain di jalur yang sama</label><select id="kgrup"><option value="1">Sendirian (1 sirkit)</option><option value="2">2 sirkit</option><option value="3">3 sirkit</option><option value="4">4 sirkit</option><option value="6">5–6 sirkit</option><option value="9">7–9 sirkit</option></select></div>
+      <div><label for="kdrop">Batas tegangan jatuh</label><select id="kdrop"><option value="3">3% (penerangan)</option><option value="4">4%</option><option value="5" selected>5% (umum)</option></select></div>
+    </div>
+    <p class="hint">Panjang diukur mengikuti jalur kabel sebenarnya (naik-turun dinding, belok), bukan jarak lurus. Tambahkan ±10% untuk aman.</p>
+  </div>
+  <div class="result" id="resKabel" aria-live="polite"></div>
+</section>
+
+<div class="cta">
+  <p><b>Butuh hitungan satu gedung sekaligus?</b> Paket Elektrikal MEP-Kit berisi Template RAB, MTO, dan Kalkulator Pencahayaan versi Excel lengkap.</p>
+  <a href="https://lynk.id/mepkit" target="_blank" rel="noopener">Lihat paket</a>
+</div>
+
+</div></main>
+
+<footer><div class="wrap">
+  <p><b>Penting:</b> hasil kalkulator ini perkiraan awal untuk perencanaan. Sebelum dipasang, tetap cek dan ricek dengan PUIL 2020, SNI terkait, data pabrikan, dan ketentuan PLN terbaru. Pekerjaan instalasi wajib dikerjakan oleh orang yang kompeten. Kalau kamu bukan dari bidang teknik, pelajari dulu dan konsultasikan hasilnya dengan teknisi atau konsultan listrik/tata udara sebelum dipakai.</p>
+  <p>© 2026 MEP-Kit · versi uji coba</p>
+</div></footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const nf=(v,d=0)=>Number(v).toLocaleString("id-ID",{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/* ---------- Tab ---------- */
+const views=["daya","lampu","ac","kabel"];
+function show(){
+  const h=(location.hash||"#daya").slice(1);
+  const v=views.includes(h)?h:"daya";
+  document.querySelectorAll("section[data-view]").forEach(s=>s.hidden=s.dataset.view!==v);
+  document.querySelectorAll(".tabs a").forEach(a=>{if(a.dataset.tab!==v)a.removeAttribute("aria-current");else a.setAttribute("aria-current","page")});
+}
+window.addEventListener("hashchange",show);
+
+/* ---------- Copy helper ---------- */
+function copyText(txt,btn){
+  const done=()=>{const t=btn.parentElement.querySelector(".toast");if(t){t.textContent="Tersalin. Tinggal tempel di WhatsApp.";setTimeout(()=>t.textContent="",3000)}};
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done()}catch(e){}ta.remove()};
+  try{navigator.clipboard.writeText(txt).then(done,fallback)}catch(e){fallback()}
+}
+
+/* =========================================================
+   KEBUTUHAN DAYA
+   ========================================================= */
+// nama, watt per unit, faktor daya (cos phi) perkiraan
+const ALAT=[
+  ["Lampu LED",10,0.9],["Lampu LED panel 60x60",36,0.9],["AC 1/2 PK",400,0.85],["AC 1 PK",800,0.85],["AC 1,5 PK",1200,0.85],["AC 2 PK",1600,0.85],
+  ["Kulkas",100,0.8],["Pompa air",250,0.8],["Mesin cuci",350,0.85],["Rice cooker",400,1],["Setrika",350,1],["Dispenser pemanas",350,1],
+  ["Microwave",1000,0.95],["Kompor induksi 1 tungku",1200,0.95],["Water heater listrik",1000,1],["TV LED",100,0.9],["Komputer PC",250,0.9],
+  ["Laptop",65,0.9],["Printer",300,0.9],["Kotak kontak umum (cadangan)",200,1],["Alat lain (isi sendiri)",100,0.9]
+];
+// daya PLN [VA, fasa, arus MCB pembatas per fasa]
+const PLN=[[900,1,4],[1300,1,6],[2200,1,10],[3500,1,16],[4400,1,20],[5500,1,25],[6600,3,10],[10600,3,16],[13200,3,20],[16500,3,25],[23000,3,35],[33000,3,50],[41500,3,63],[53000,3,80],[66000,3,100],[82500,3,125],[105000,3,160],[131000,3,200],[147000,3,225],[164000,3,250],[197000,3,300]];
+let rows=[["Lampu LED",10,12],["AC 1 PK",800,2],["Kulkas",100,1],["Pompa air",250,1],["Mesin cuci",350,1],["Rice cooker",400,1],["Setrika",350,1],["TV LED",100,1],["Kotak kontak umum (cadangan)",200,2]];
+const pfOf=n=>{const a=ALAT.find(x=>x[0]===n);return a?a[2]:0.9};
+
+const sel=$("#preset");
+ALAT.forEach(a=>{const o=document.createElement("option");o.value=a[0];o.textContent=a[0]+" ("+nf(a[1])+" W)";sel.appendChild(o)});
+
+function drawLoads(){
+  const box=$("#loads");box.innerHTML="";
+  rows.forEach((r,i)=>{
+    const d=document.createElement("div");d.className="load";
+    d.innerHTML='<input aria-label="Nama alat" id="ln'+i+'" value="'+r[0].replace(/"/g,"&quot;")+'">'+
+      '<input aria-label="Watt per unit" id="lw'+i+'" type="number" inputmode="decimal" min="0" value="'+r[1]+'">'+
+      '<input aria-label="Jumlah" id="lq'+i+'" type="number" inputmode="numeric" min="0" value="'+r[2]+'">'+
+      '<button class="ghost" type="button" aria-label="Hapus '+r[0].replace(/"/g,"&quot;")+'">✕</button>';
+    d.querySelector("#ln"+i).addEventListener("input",e=>{rows[i][0]=e.target.value;calcDaya()});
+    d.querySelector("#lw"+i).addEventListener("input",e=>{rows[i][1]=+e.target.value||0;calcDaya()});
+    d.querySelector("#lq"+i).addEventListener("input",e=>{rows[i][2]=+e.target.value||0;calcDaya()});
+    d.querySelector("button").addEventListener("click",()=>{rows.splice(i,1);drawLoads();calcDaya()});
+    box.appendChild(d);
+  });
+}
+$("#addLoad").addEventListener("click",()=>{const a=ALAT.find(x=>x[0]===sel.value);rows.push([a[0],a[1],1]);drawLoads();calcDaya()});
+$("#fk").addEventListener("change",calcDaya);$("#spare").addEventListener("change",calcDaya);
+
+function calcDaya(){
+  let W=0,VA=0,big=null;
+  rows.forEach(r=>{const w=r[1]*r[2];const va=w/pfOf(r[0]);W+=w;VA+=va;if(r[2]>0&&(!big||w>big[1]))big=[r[0],w]});
+  const fk=+$("#fk").value, sp=+$("#spare").value;
+  const puncak=VA*fk, butuh=puncak*(1+sp);
+  const pick=PLN.find(p=>p[0]>=butuh);
+  const idx=pick?PLN.indexOf(pick):-1;
+  const lower=idx>0?PLN[idx-1]:null;
+  const out=$("#resDaya");
+  if(VA<=0){out.innerHTML='<div class="top"><b>Hasil</b></div><div class="why"><p>Isi minimal satu alat dengan watt dan jumlah lebih dari 0.</p></div>';return}
+  const fasaTxt=pick?(pick[1]===1?"1 fasa (220 V)":"3 fasa (380 V)"):"-";
+  const mcbTxt=pick?(pick[1]===1?nf(pick[2])+" A":"3 × "+nf(pick[2])+" A"):"-";
+  const useRatio=pick?butuh/pick[0]*100:0;
+  let html='<div class="top"><b>Lembar hitungan · Daya PLN</b><span>'+new Date().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})+'</span></div>';
+  html+='<div class="big">'+
+    '<div><small>Total alat terpasang</small><strong>'+nf(VA)+' VA</strong><em>'+nf(W)+' watt</em></div>'+
+    '<div><small>Perkiraan kebutuhan</small><strong>'+nf(butuh)+' VA</strong><em>sudah termasuk cadangan '+nf(sp*100)+'%</em></div>'+
+    '<div><small>Daya PLN disarankan</small><strong>'+(pick?nf(pick[0])+' VA':'> 197.000 VA')+'</strong><em>'+fasaTxt+(pick?' · MCB PLN '+mcbTxt:'')+'</em></div>'+
+  '</div>';
+  html+='<div class="why"><h3>Kenapa segitu?</h3><ol>'+
+    '<li>Semua alat kalau dijumlah butuh <b>'+nf(VA)+' VA</b>. PLN menghitung dalam VA, bukan watt, karena alat bermotor seperti AC dan pompa menarik arus lebih besar dari angka wattnya.</li>'+
+    '<li>Tidak semua alat nyala bareng. Dengan perkiraan <b>'+nf(fk*100)+'%</b> nyala bersamaan, beban puncaknya sekitar <b>'+nf(puncak)+' VA</b>.</li>'+
+    (sp>0?'<li>Ditambah cadangan <b>'+nf(sp*100)+'%</b> supaya nanti beli AC atau alat baru tidak langsung "jeglek".</li>':'<li>Tanpa cadangan. Kalau nanti tambah alat, kemungkinan harus naik daya.</li>')+
+    (pick?'<li>Golongan daya PLN terdekat di atas <b>'+nf(butuh)+' VA</b> adalah <b>'+nf(pick[0])+' VA</b> (terpakai sekitar '+nf(useRatio)+'%).'+(lower?' Kalau pakai '+nf(lower[0])+' VA, MCB PLN bisa sering turun saat beban puncak.':'')+(useRatio>90&&PLN[idx+1]?' Karena sudah mepet di atas 90%, pertimbangkan satu tingkat di atasnya ('+nf(PLN[idx+1][0])+' VA).':'')+'</li>':'<li>Kebutuhan melebihi 197.000 VA. Biasanya sudah masuk sambungan tegangan menengah (trafo sendiri), konsultasikan ke PLN.</li>')+
+    (pick&&pick[1]===3?'<li>Di atas 5.500 VA sambungan PLN biasanya <b>3 fasa</b>. Beban harus dibagi rata ke fasa R, S, T di panel.</li>':'')+
+  '</ol>';
+  html+='<div class="calc">Total terpasang  = Σ (watt × jumlah ÷ cos φ)  = '+nf(VA)+' VA\nBeban puncak     = '+nf(VA)+' × '+fk+'  = '+nf(puncak)+' VA\nKebutuhan        = '+nf(puncak)+' × (1 + '+sp+')  = '+nf(butuh)+' VA\nPilih daya PLN   ≥ '+nf(butuh)+' VA  →  '+(pick?nf(pick[0])+' VA':'TM')+'</div>';
+  if(big)html+='<p class="ref">Beban terbesar: <b>'+big[0]+'</b> ('+nf(big[1])+' W). Alat bermotor (AC, pompa) menarik arus awal 3–6 kali lipat sesaat saat menyala, jadi jangan dinyalakan berbarengan.</p>';
+  html+='<p class="ref"><b>Acuan:</b> PUIL 2020 (kebutuhan maksimum dan faktor kebersamaan beban); golongan daya tersambung dan MCB pembatas PLN (angka indikatif, cek ketentuan PLN terbaru). Faktor nyala bersamaan dan cos φ tiap alat adalah perkiraan umum.</p></div>';
+  html+='<div class="actions"><button class="primary" type="button" id="cpDaya">Salin hasil untuk WhatsApp</button><span class="toast"></span></div>';
+  out.innerHTML=html;
+  $("#cpDaya").addEventListener("click",e=>{
+    let t="*Hitungan Kebutuhan Daya PLN* (MEP-Kit)\n\nDaftar alat:\n"+rows.filter(r=>r[2]>0).map(r=>"- "+r[0]+": "+nf(r[1])+" W × "+nf(r[2])).join("\n")+
+      "\n\nTotal terpasang: "+nf(VA)+" VA ("+nf(W)+" W)\nNyala bersamaan: "+nf(fk*100)+"% → beban puncak "+nf(puncak)+" VA\nCadangan: "+nf(sp*100)+"% → kebutuhan "+nf(butuh)+" VA\n\n*Daya PLN disarankan: "+(pick?nf(pick[0])+" VA, "+fasaTxt+", MCB PLN "+mcbTxt:"> 197.000 VA (konsultasi PLN)")+"*\n\nAcuan: PUIL 2020, ketentuan daya tersambung PLN. Hasil perkiraan awal, cek & ricek sebelum pengajuan.";
+    copyText(t,e.target);
+  });
+}
+
+/* =========================================================
+   JUMLAH TITIK LAMPU (metode lumen)
+   ========================================================= */
+const LUX=[["KANTOR"],["Ruang direktur / ruang kerja",350],["Ruang komputer",350],["Ruang rapat",300],["Ruang gambar",750],["Gudang arsip",150],["Ruang arsip aktif",300],["Lobi, koridor, tangga",100],["Toilet",100],["Pantry / dapur kantor",250],["Ruang panel / ruang mesin",200],["Gudang umum",100],["Parkir dalam gedung",50],
+["RUMAH TINGGAL"],["Teras",60],["Ruang tamu",150],["Ruang makan",250],["Ruang kerja (rumah)",250],["Kamar tidur",150],["Kamar mandi",250],["Dapur (rumah)",250],["Garasi",60],
+["SEKOLAH"],["Ruang kelas",250],["Perpustakaan",300],["Laboratorium (sekolah)",500],["Kantin",200],
+["HOTEL DAN RESTORAN"],["Lobi, koridor (hotel)",100],["Ruang serba guna",200],["Restoran",250],["Kamar tidur hotel",150],["Dapur (hotel / restoran)",300],
+["RUMAH SAKIT"],["Ruang rawat inap",250],["Laboratorium (rumah sakit)",500],
+["TOKO DAN INDUSTRI"],["Ruang pamer / toko",500],["Gudang industri",100],["Pekerjaan kasar",150],["Pekerjaan menengah",350],["Pekerjaan halus",750],
+["LAIN-LAIN"],["Rumah ibadah",200],["Ruang pertemuan / aula",200]];
+const LAMPU=[["LED panel 60 x 60, 36 W",3600,36,0.8],["Downlight LED 14 W",1200,14,0.8],["Downlight LED 9 W",720,9,0.8],["Downlight LED 9 W IP44 (area basah)",720,9,0.8],["TLED batten 2 x 18 W IP65",3600,36,0.8],["TLED batten 1 x 18 W",1800,18,0.8],["Bulkhead LED 12 W IP65",960,12,0.7],["Highbay LED 100 W (gudang tinggi)",13000,100,0.7]];
+const CU=[[0,0.30],[0.6,0.36],[0.8,0.44],[1.0,0.50],[1.25,0.55],[1.5,0.59],[2.0,0.65],[2.5,0.69],[3.0,0.72],[4.0,0.76],[5.0,0.79]];
+
+const fs=$("#fungsi");let og=null;
+LUX.forEach(x=>{if(x.length===1){og=document.createElement("optgroup");og.label=x[0];fs.appendChild(og)}else{const o=document.createElement("option");o.value=x[0];o.textContent=x[0]+" · "+x[1]+" lux";og.appendChild(o)}});
+fs.value="Ruang direktur / ruang kerja";
+const ls=$("#lampu");LAMPU.forEach((l,i)=>{const o=document.createElement("option");o.value=i;o.textContent=l[0];ls.appendChild(o)});
+function setLamp(){const l=LAMPU[+ls.value];$("#lm").value=l[1];$("#w").value=l[2]}
+ls.addEventListener("change",()=>{setLamp();calcLampu()});
+["#fungsi","#pj","#lb","#tp","#tk","#lm","#w"].forEach(s=>$(s).addEventListener("input",calcLampu));
+setLamp();
+
+function grid(n,P,L){ // baris x kolom >= n, mengikuti bentuk ruang
+  let best=null;
+  for(let r=1;r<=n;r++){const c=Math.ceil(n/r);const waste=r*c-n;const shape=Math.abs((P/c)-(L/r));const score=waste*10+shape;if(!best||score<best.s)best={r,c,s:score}}
+  return best;
+}
+function calcLampu(){
+  const f=LUX.find(x=>x[0]===fs.value);const E=f?f[1]:0;
+  const P=+$("#pj").value,L=+$("#lb").value,H=+$("#tp").value,hk=+$("#tk").value;
+  const F=+$("#lm").value,Wl=+$("#w").value;const lamp=LAMPU[+ls.value];const LLF=lamp[3];
+  const out=$("#resLampu");
+  const Hm=H-hk;
+  if(!(P>0&&L>0&&Hm>0&&F>0&&E>0)){out.innerHTML='<div class="top"><b>Hasil</b></div><div class="why"><p>Lengkapi ukuran ruang dan lampu. Tinggi plafon harus lebih tinggi dari tinggi meja kerja.</p></div>';return}
+  const A=P*L;const K=(P*L)/(Hm*(P+L));
+  let cu=CU[0][1];CU.forEach(c=>{if(K>=c[0])cu=c[1]});
+  const Nmin=E*A/(F*LLF*cu);const N=Math.max(1,Math.ceil(Nmin-1e-9));
+  const g=grid(N,P,L);const Nfix=g.r*g.c;
+  const Eh=Nfix*F*LLF*cu/A;const Wm2=Nfix*Wl/A;
+  const sx=P/g.c,sy=L/g.r;const shr=Math.max(sx,sy)/Hm;
+  const okLux=Eh>=E;
+  const chipShr=shr<=1.5?'<span class="chip ok">sebaran rata</span>':'<span class="chip warn">bisa belang</span>';
+  let html='<div class="top"><b>Lembar hitungan · Titik lampu</b><span>'+fs.value+' · '+nf(P,1)+' × '+nf(L,1)+' m</span></div>';
+  html+='<div class="big">'+
+    '<div><small>Jumlah lampu</small><strong>'+nf(Nfix)+' titik</strong><em>susun '+g.r+' baris × '+g.c+' kolom</em></div>'+
+    '<div><small>Terang yang dicapai</small><strong>'+nf(Eh)+' lux</strong><em>target '+nf(E)+' lux '+(okLux?'<span class="chip ok">memenuhi</span>':'<span class="chip bad">kurang</span>')+'</em></div>'+
+    '<div><small>Daya lampu</small><strong>'+nf(Nfix*Wl)+' W</strong><em>'+nf(Wm2,1)+' W/m²</em></div>'+
+  '</div>';
+  // denah
+  const vw=320,pad=18,sc=Math.min((vw-2*pad)/P,(220-2*pad)/L);const w=P*sc,h=L*sc;const ox=(vw-w)/2,oy=pad;
+  let dots="";for(let r=0;r<g.r;r++)for(let c=0;c<g.c;c++){const x=ox+(c+0.5)*w/g.c,y=oy+(r+0.5)*h/g.r;dots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="6" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.5"/><line x1="'+(x-4)+'" y1="'+(y-4)+'" x2="'+(x+4)+'" y2="'+(y+4)+'" stroke="var(--ink)" stroke-width="1.2"/><line x1="'+(x-4)+'" y1="'+(y+4)+'" x2="'+(x+4)+'" y2="'+(y-4)+'" stroke="var(--ink)" stroke-width="1.2"/>'}
+  const svgH=oy+h+34;
+  html+='<div class="why"><h3>Denah susunan lampu</h3><div class="plan"><svg viewBox="0 0 '+vw+' '+svgH.toFixed(0)+'" width="'+vw+'" role="img" aria-label="Denah '+g.r+' baris kali '+g.c+' kolom lampu"><rect x="'+ox+'" y="'+oy+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="none" stroke="var(--ink)" stroke-width="2"/>'+dots+
+    '<text x="'+(vw/2)+'" y="'+(oy+h+16).toFixed(1)+'" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--muted)">'+nf(P,1)+' m · jarak antar lampu ± '+nf(sx,2)+' m × '+nf(sy,2)+' m</text>'+
+    '<text x="'+(vw/2)+'" y="'+(oy+h+30).toFixed(1)+'" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--muted)">jarak lampu ke dinding ± setengahnya</text></svg></div></div>';
+  html+='<div class="why"><h3>Kenapa segitu?</h3><ol>'+
+    '<li>Untuk <b>'+fs.value.toLowerCase()+'</b>, terang yang dianjurkan sekitar <b>'+nf(E)+' lux</b> di permukaan '+(hk>0?'meja':'lantai')+'.</li>'+
+    '<li>Luas ruang <b>'+nf(A,1)+' m²</b>, jadi cahaya yang harus sampai ke bawah = '+nf(E)+' × '+nf(A,1)+' = <b>'+nf(E*A)+' lumen</b>.</li>'+
+    '<li>Tidak semua cahaya lampu sampai ke meja. Sebagian terserap dinding dan plafon, dan lampu makin redup karena debu dan umur. Di ruang ini yang efektif sampai hanya sekitar <b>'+nf(cu*LLF*100)+'%</b>.</li>'+
+    '<li>Satu lampu '+nf(F)+' lm hanya menyumbang ±'+nf(F*cu*LLF)+' lm efektif, jadi butuh minimal <b>'+nf(Nmin,1)+'</b> lampu, dibulatkan jadi <b>'+nf(Nfix)+' titik</b> supaya bisa disusun rapi '+g.r+' × '+g.c+'.</li>'+
+    '<li>Jarak antar lampu ±'+nf(Math.max(sx,sy),2)+' m dengan tinggi lampu ke meja '+nf(Hm,2)+' m. '+chipShr+' '+(shr<=1.5?'Jarak masih di bawah 1,5 × tinggi lampu, jadi cahaya menyebar rata.':'Jarak lebih dari 1,5 × tinggi lampu. Pertimbangkan lampu lebih kecil tapi lebih banyak supaya tidak ada area gelap di antara lampu.')+'</li>'+
+  '</ol>';
+  html+='<div class="calc">Indeks ruang  K  = P×L ÷ (Hm×(P+L)) = '+nf(P,2)+'×'+nf(L,2)+' ÷ ('+nf(Hm,2)+'×'+nf(P+L,2)+') = '+nf(K,2)+'\nFaktor utilisasi CU = '+nf(cu,2)+'  (dari tabel K)\nFaktor rugi cahaya LLF = '+nf(LLF,2)+'\nN = E×A ÷ (F×LLF×CU) = '+nf(E)+'×'+nf(A,2)+' ÷ ('+nf(F)+'×'+nf(LLF,2)+'×'+nf(cu,2)+') = '+nf(Nmin,2)+'  →  '+nf(Nfix)+' titik\nTerang hasil = '+nf(Nfix)+'×'+nf(F)+'×'+nf(LLF,2)+'×'+nf(cu,2)+' ÷ '+nf(A,2)+' = '+nf(Eh)+' lux</div>';
+  html+='<p class="ref"><b>Acuan:</b> SNI 6197:2020 Konservasi energi pada sistem pencahayaan (tingkat pencahayaan dan daya per m²); SNI 03-6575-2001 Tata cara perancangan sistem pencahayaan buatan (metode lumen). Angka lux indikatif, cek tabel asli SNI. CU dari tabel pendekatan (plafon 70%, dinding 50%, lantai 20%); untuk ruang penting verifikasi dengan DIALux.</p></div>';
+  html+='<div class="actions"><button class="primary" type="button" id="cpLampu">Salin hasil untuk WhatsApp</button><span class="toast"></span></div>';
+  out.innerHTML=html;
+  $("#cpLampu").addEventListener("click",e=>{
+    const t="*Hitungan Titik Lampu* (MEP-Kit)\n\nRuang: "+fs.value+", "+nf(P,1)+" × "+nf(L,1)+" m (luas "+nf(A,1)+" m²), plafon "+nf(H,2)+" m\nTarget terang: "+nf(E)+" lux\nLampu: "+lamp[0]+" ("+nf(F)+" lm, "+nf(Wl)+" W)\n\n*Hasil: "+nf(Nfix)+" titik lampu ("+g.r+" baris × "+g.c+" kolom)*\nTerang dicapai: ± "+nf(Eh)+" lux\nJarak antar lampu: ± "+nf(sx,2)+" × "+nf(sy,2)+" m\nDaya lampu: "+nf(Nfix*Wl)+" W ("+nf(Wm2,1)+" W/m²)\n\nAcuan: SNI 6197:2020, SNI 03-6575-2001 (metode lumen). Hasil perkiraan awal, cek & ricek sebelum gambar diterbitkan.";
+    copyText(t,e.target);
+  });
+}
+
+/* =========================================================
+   KEBUTUHAN AC (perkiraan cepat)
+   ========================================================= */
+// [label, BTU/h kapasitas pendinginan nominal]  (angka umum split wall; cek katalog merek)
+const PK=[["½ PK",5000],["¾ PK",7000],["1 PK",9000],["1½ PK",12000],["2 PK",18000],["2½ PK",21000],["3 PK",24000]];
+["#acf","#acp","#acl","#act","#aco","#acs","#aca","#acw"].forEach(s=>$(s).addEventListener("input",calcAC));
+function calcAC(){
+  const q=+$("#acf").value, fl=$("#acf").selectedOptions[0].textContent;
+  const P=+$("#acp").value,L=+$("#acl").value,H=+$("#act").value,org=Math.max(0,+$("#aco").value||0);
+  const fs=+$("#acs").value, fa=+$("#aca").value, Wa=Math.max(0,+$("#acw").value||0);
+  const out=$("#resAC");
+  if(!(P>0&&L>0&&H>0)){out.innerHTML='<div class="top"><b>Hasil</b></div><div class="why"><p>Lengkapi ukuran ruang.</p></div>';return}
+  const A=P*L, fh=Math.max(1,H/3);
+  const qRuang=A*q*fh*fs*fa, qOrg=org*450, qAlat=Wa*3.412;
+  const Q=qRuang+qOrg+qAlat;
+  if(A>100||H>4||Q>84000){
+    const Qi=A*q*Math.min(fh,1.2)*fs*fa+qOrg+qAlat; const TR=Qi/12000; // indikasi: efek plafon tinggi dibatasi (udara panas naik ke atas)
+    const why=[];if(A>100)why.push("luasnya "+nf(A,0)+" m² (batas kalkulator ini 100 m²)");if(H>4)why.push("plafonnya "+nf(H,2)+" m (batas 4 m)");if(Q>84000&&!why.length)why.push("bebannya lebih dari 4 unit AC 2½ PK");
+    const sys=Qi<=60000?"AC split duct atau beberapa AC cassette/floor standing":(Qi<=240000?"AC split duct / VRF dengan saluran udara (ducting)":"sistem sentral: AHU dengan chiller, atau VRF kapasitas besar");
+    out.innerHTML='<div class="top"><b>Di luar jangkauan hitung cepat</b><span>'+fl+' · '+nf(P,1)+' × '+nf(L,1)+' m</span></div>'+
+    '<div class="big"><div><small>Perkiraan kasar beban</small><strong>± '+nf(TR,0)+' TR</strong><em>'+nf(Qi)+' BTU/jam · hanya indikasi</em></div><div><small>Arah sistem</small><strong style="font-size:16px;font-family:var(--f-body)">'+sys+'</strong></div></div>'+
+    '<div class="why"><h3>Kenapa tidak keluar jumlah AC?</h3><ol>'+
+    '<li>Ruang ini '+why.join(" dan ")+'. Di ruang sebesar atau setinggi ini, AC split dinding tidak cocok: udara dinginnya tidak sampai merata, dan panas menumpuk di bagian atas ruang.</li>'+
+    '<li>Ruang seperti ini butuh <b>perhitungan beban pendingin lengkap</b> per komponen: dinding, kaca, atap, orang, lampu, alat, dan udara segar dari luar. Setelah itu baru dipilih sistemnya, misalnya split duct, VRF, atau AHU dengan chiller, termasuk rancangan saluran udara (ducting).</li>'+
+    '<li>Angka '+nf(TR,0)+' TR (1 TR = 12.000 BTU/jam) di atas hanya indikasi awal untuk diskusi anggaran. Jangan dipakai untuk membeli unit.</li></ol>'+
+    '<p class="ref"><b>Acuan:</b> SNI 6390:2020 Konservasi energi sistem tata udara bangunan gedung; perhitungan beban pendingin mengikuti metode ASHRAE. Konsultasikan ke perencana tata udara.</p></div>';
+    return;
+  }
+  // AC split dinding rumah umumnya maks 2½ PK per unit
+  const SPLIT=PK.filter(p=>p[1]<=21000);
+  const W=c=>Math.round(c/11/50)*50; // perkiraan daya listrik (± 11 BTU/jam per watt)
+  const nm=u=>{const same=u.every(x=>x[0]===u[0][0]);return u.length===1?u[0][0]:(same?u.length+" × "+u[0][0]:u.map(x=>x[0]).join(" + "))};
+  const cap=u=>u.reduce((a,b)=>a+b[1],0);
+  const opts=[];
+  const single=SPLIT.find(p=>p[1]>=Q);
+  const half=SPLIT.find(p=>p[1]>=Q/2);
+  if(single){
+    opts.push({judul:"1 unit",units:[single],
+      plus:["Biaya beli dan pasang paling murah","Cukup 1 jalur pipa, 1 jalur kabel, 1 unit outdoor"],
+      minus:["Saat dicuci atau rusak, ruang tidak ada AC sama sekali","Kalau ruang sering ramai, unit bekerja penuh terus, jadi perlu dirawat lebih sering"]});
+  }else if(Q<=24000){
+    opts.push({judul:"1 unit cassette",units:[["3 PK (cassette)",24000]],
+      plus:["Dingin menyebar ke segala arah dari plafon","Hanya 1 unit outdoor"],
+      minus:["Butuh plafon gantung untuk unitnya","Harga unit dan pasang lebih mahal dari split dinding","Saat dicuci atau rusak, ruang tidak ada AC sama sekali"]});
+  }
+  if(Q>9000&&half){
+    opts.push({judul:"2 unit lebih kecil",units:[half,half],
+      plus:["Ruang ramai: dua-duanya dinyalakan","Ruang sepi: cukup 1 unit, listrik lebih hemat","Saat satu unit dicuci atau diperbaiki, masih ada yang menyala","Jadwal cuci AC lebih longgar, karena beban kerja tiap unit lebih ringan","Pasang di dua sisi ruang, dinginnya lebih merata"],
+      minus:["Biaya beli dan pasang lebih mahal (2 unit, 2 jalur pipa, 2 outdoor)","Butuh tempat untuk 2 unit outdoor"]});
+  }
+  if(!opts.length){ // beban > 2 × 2½ PK: kombinasi 3-4 unit
+    let best=null;
+    for(let n=3;n<=4&&!best;n++){(function gen(st,left,arr){if(!left){const s=cap(arr);if(s>=Q){const sc=s+(arr[arr.length-1][1]-arr[0][1])*0.2;if(!best||sc<best.sc)best={arr:arr.slice(),sc}}return}for(let i=st;i<SPLIT.length;i++){arr.push(SPLIT[i]);gen(i,left-1,arr);arr.pop()}})(0,n,[])}
+    opts.push({judul:best.arr.length+" unit",units:best.arr,
+      plus:["Beban dibagi ke beberapa unit split, dingin lebih merata","Saat ruang sepi sebagian unit bisa dimatikan","Saat satu unit dirawat, yang lain tetap menyala"],
+      minus:["Butuh banyak tempat untuk unit outdoor","Untuk ruang sebesar ini, AC cassette atau split duct juga layak dipertimbangkan"]});
+  }
+  const main=opts[0];
+  const kW=Q/3412;
+  const mepet=main.units.length===1&&Q/cap(main.units)>0.9;
+  let html='<div class="top"><b>Lembar hitungan · Kebutuhan AC</b><span>'+fl+' · '+nf(P,1)+' × '+nf(L,1)+' m</span></div>';
+  html+='<div class="big">'+
+    '<div><small>AC disarankan</small><strong>'+opts.map(o=>nm(o.units)).join('<br><span style="font-size:13px;font-family:var(--f-body);font-weight:600;color:var(--muted)">atau</span> ')+'</strong><em>'+(opts.length>1?'2 pilihan, lihat di bawah':'total ± '+nf(cap(main.units))+' BTU/jam')+'</em></div>'+
+    '<div><small>Beban pendingin</small><strong>'+nf(Q)+'</strong><em>BTU/jam · '+nf(kW,2)+' kW</em></div>'+
+    '<div><small>Luas ruang</small><strong>'+nf(A,1)+' m²</strong><em>plafon '+nf(H,2)+' m</em></div>'+
+  '</div>';
+  // kartu pilihan untuk owner
+  html+='<div class="why"><h3>'+(opts.length>1?'Pilihan untuk owner':'Saran pemasangan')+'</h3><div class="opts">'+opts.map((o,i)=>
+    '<div class="opt"><div class="opth"><span class="chip '+(i===0?'ok':'warn')+'">'+(opts.length>1?'Pilihan '+'AB'[i]:'Saran')+'</span><b>'+o.judul+': '+nm(o.units)+'</b></div>'+
+    '<p class="ref">Total ± '+nf(cap(o.units))+' BTU/jam · listrik maks ± '+nf(W(cap(o.units)))+' W</p>'+
+    '<ul class="pm">'+o.plus.map(x=>'<li class="p">'+x+'</li>').join('')+o.minus.map(x=>'<li class="m">'+x+'</li>').join('')+'</ul></div>').join('')+'</div>'+
+    (opts.length>1?'<p class="hint" style="color:var(--ink)">Dua pilihan ini sama-sama cukup untuk mendinginkan ruang. Pilih yang paling cocok dengan <b>budget</b> dan kebiasaan pakai ruangnya. Hitungan ini acuan teknis, bukan keharusan membeli yang paling mahal.</p>':'')+'</div>';
+  html+='<div class="why"><h3>Kenapa segitu?</h3><ol>'+
+    '<li>AC dipilih dari <b>berapa banyak panas yang harus dibuang</b> dari ruang, satuannya BTU/jam. Makin besar dan makin panas ruangnya, makin besar PK yang dibutuhkan.</li>'+
+    '<li>'+fl+' seluas <b>'+nf(A,1)+' m²</b> menyumbang panas sekitar <b>'+nf(qRuang)+' BTU/jam</b> (dari dinding, kaca, atap, dan lampu)'+(fh>1?', sudah ditambah karena plafonnya lebih tinggi dari 3 m':'')+(fs>1?', ditambah 10% karena kena matahari sore':'')+(fa>1?', ditambah 15% karena langsung di bawah atap':'')+'.</li>'+
+    '<li>Tiap orang di dalam ruang mengeluarkan panas ±450 BTU/jam. Untuk <b>'+nf(org)+' orang</b> = '+nf(qOrg)+' BTU/jam.</li>'+
+    (Wa>0?'<li>Alat listrik '+nf(Wa)+' W juga jadi panas, sekitar <b>'+nf(qAlat)+' BTU/jam</b>.</li>':'')+
+    '<li>Totalnya <b>'+nf(Q)+' BTU/jam</b>. Kapasitas AC yang dipilih harus sama atau sedikit di atas angka ini.'+(single?'':' AC split dinding untuk rumah dan kantor kecil umumnya paling besar <b>2½ PK</b>, jadi bebannya perlu dibagi.')+(mepet?' Pilihan 1 unit kapasitasnya sudah mepet di atas 90%, jadi saat ruang penuh dinginnya pas-pasan.':'')+'</li>'+
+    '<li>Pilih AC tipe <b>inverter</b>. Setelah suhu tercapai, kompresornya melambat, tidak mati-nyala terus, jadi listriknya lebih hemat dan suhunya lebih stabil.</li>'+
+    '<li>AC yang terlalu kecil akan terus bekerja keras dan ruang tidak pernah dingin. AC yang terlalu besar cepat dingin tapi lembap dan boros, karena kompresor sering mati-nyala.</li>'+
+  '</ol>';
+  html+='<div class="calc">Panas ruang  = luas × '+q+' BTU/jam·m²'+(fh>1?' × '+nf(fh,2):'')+(fs>1?' × '+fs:'')+(fa>1?' × '+fa:'')+' = '+nf(qRuang)+'\nPanas orang  = '+nf(org)+' × 450 = '+nf(qOrg)+'\nPanas alat   = '+nf(Wa)+' W × 3,412 = '+nf(qAlat)+'\nTotal        = '+nf(Q)+' BTU/jam  →  '+opts.map(o=>nm(o.units)).join('  atau  ')+'</div>';
+  html+='<p class="ref"><b>Acuan:</b> perkiraan cepat (rule of thumb) beban pendingin untuk ruang tunggal. Kondisi rancangan ruang ±25 °C mengikuti SNI 6390:2020 Konservasi energi sistem tata udara bangunan gedung. Kapasitas BTU per PK dan daya listrik adalah angka umum AC split; cek katalog merek yang dipakai. Untuk gedung atau ruang khusus (server, dapur besar, aula) hitung beban pendingin lengkap.</p></div>';
+  html+='<div class="actions"><button class="primary" type="button" id="cpAC">Salin hasil untuk WhatsApp</button><span class="toast"></span></div>';
+  out.innerHTML=html;
+  $("#cpAC").addEventListener("click",e=>{
+    const t="*Hitungan Kebutuhan AC* (MEP-Kit)\n\nRuang: "+fl+", "+nf(P,1)+" × "+nf(L,1)+" m ("+nf(A,1)+" m²), plafon "+nf(H,2)+" m\nOrang: "+nf(org)+", alat: "+nf(Wa)+" W"+(fs>1?", kena matahari sore":"")+(fa>1?", di bawah atap":"")+"\n\nBeban pendingin: ± "+nf(Q)+" BTU/jam\n\n"+opts.map((o,i)=>"*"+(opts.length>1?"Pilihan "+"AB"[i]:"Saran")+": "+o.judul+" "+nm(o.units)+"*\n"+o.plus.map(x=>"+ "+x).join("\n")+"\n"+o.minus.map(x=>"- "+x).join("\n")).join("\n\n")+(opts.length>1?"\n\nDua pilihan sama-sama cukup. Silakan disesuaikan dengan budget.":"")+"\n\nAcuan: perkiraan cepat beban pendingin, kondisi ruang ±25 °C (SNI 6390:2020). Cek kapasitas di katalog merek AC.";
+    copyText(t,e.target);
+  });
+}
+
+/* =========================================================
+   KABEL & MCB  (sumber: Katalog Supreme LV PVC 2024 + Building Wire 2023)
+   ========================================================= */
+const SZ=[1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
+// Resistansi DC konduktor 20 °C, ohm/km (Supreme; sama dengan IEC 60228 kelas 1/2)
+const R20=[12.1,7.41,4.61,3.08,1.83,1.15,0.727,0.524,0.387,0.268,0.193,0.153,0.124,0.0991,0.0754,0.0601];
+// KHA pada 30 °C (A), urut sesuai SZ; null = tidak ada di katalog
+const KHA={
+  nyaPipa :[15,20,25,33,45,61,83,104,132,166,198,236,null,null,null,null],        // Supreme Building Wire + LV hlm.1 (NYA in pipe)
+  nyaUdara:[24,32,43,54,74,98,140,159,197,247,293,345,391,449,529,609],           // NYA in air
+  nymUdara:[19,25,34,44,61,null,null,null,null,null,null,null,null,null,null,null],// NYM 2-4 core in air (Building Wire)
+  nyyUdara:[18,25,34,44,60,80,105,130,160,200,245,285,325,370,435,500],           // NYY 3-5 core in air (hlm.4-7)
+  nyyTanah:[24,32,41,52,69,89,116,138,165,205,245,285,315,355,415,465]            // NYY 3-5 core in ground
+};
+// Cara pasang: tabel KHA, faktor suhu, faktor berkelompok, batas ukuran, nama kabel
+const PASANG={
+  nymPipa :{label:"NYM dalam pipa / tertanam di dinding",tbl:"nyaPipa",suhu:"udara",grup:"pipa",maxS:10,
+            catatan:"Katalog tidak punya angka NYM di dalam pipa, jadi dipakai angka NYA di dalam pipa (lebih aman). Cek PUIL 2020 Tabel B.52.",
+            nama:(S,f)=>f===1?"NYM 3 × "+S+" mm²":"NYM 4 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)"},
+  nymUdara:{label:"NYM terbuka, diklem di plafon / dinding",tbl:"nymUdara",suhu:"udara",grup:"pipa",maxS:10,catatan:"",
+            nama:(S,f)=>f===1?"NYM 3 × "+S+" mm²":"NYM 4 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)"},
+  nyaPipa :{label:"NYA dalam pipa (conduit)",tbl:"nyaPipa",suhu:"udara",grup:"pipa",maxS:120,catatan:"",
+            nama:(S,f)=>f===1?"NYA 2 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)":"NYA 4 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)"},
+  nyyTray :{label:"NYY di udara / cable tray / rak",tbl:"nyyUdara",suhu:"udara",grup:"tray",maxS:300,catatan:"",
+            nama:(S,f)=>f===1?"NYY 3 × "+S+" mm²":"NYY 4 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)"},
+  nyyTanah:{label:"NYY ditanam di tanah",tbl:"nyyTanah",suhu:"tanah",grup:"tanah",maxS:300,catatan:"Kedalaman tanam 70 cm, tanah biasa (resistivitas termal 100 °C·cm/W).",
+            nama:(S,f)=>f===1?"NYY 3 × "+S+" mm²":"NYY 4 × "+S+" mm² + NYA "+PE(S)+" mm² (PE)"}
+};
+// Faktor koreksi suhu (isolasi PVC) - Supreme hlm.33 A.1 & hlm.34 B.1
+const KT={udara:{25:1.07,30:1.00,35:0.93,40:0.87,45:0.79},tanah:{25:1.07,30:1.00,35:0.94,40:0.87,45:0.79}};
+// Faktor berkelompok: jumlah sirkit -> faktor
+const KG={
+  pipa :{1:1.00,2:0.80,3:0.70,4:0.65,6:0.57,9:0.50,src:"PUIL 2020 Tabel B.52.17 (kabel berdempetan dalam pipa / berkas)"},
+  tray :{1:1.00,2:0.84,3:0.80,4:0.78,6:0.75,9:0.73,src:"Katalog Supreme hlm.37 butir 3.2.3 (kabel berdempetan di rak, 1 tingkat)"},
+  tanah:{1:1.00,2:0.85,3:0.75,4:0.68,6:0.60,9:0.56,src:"Katalog Supreme hlm.33 butir A.4 (kabel multi-inti di tanah)"}
+};
+// Pengaman standar (IEC 60898 MCB s.d. 63 A; di atasnya MCCB IEC 60947-2)
+const MCB=[6,10,16,20,25,32,40,50,63], MCCB=[80,100,125,160,200,250,320,400];
+// Penghantar PE menurut PUIL 2020 Tabel 54.3 (S<=16: S; 16<S<=35: 16; S>35: S/2)
+function PE(S){if(S<=16)return S;if(S<=35)return 16;const h=S/2;return SZ.find(x=>x>=h)||S}
+const JENIS={
+  lampu :{label:"Penerangan (lampu)",pf:0.9,minS:1.5,drop:3,motor:false},
+  kotak :{label:"Kotak kontak / AC / alat rumah tangga",pf:0.9,minS:2.5,drop:5,motor:false},
+  motor :{label:"Motor / pompa (3 fasa atau 1 fasa)",pf:0.85,minS:2.5,drop:5,motor:true},
+  feeder:{label:"Feeder panel (panel ke panel)",pf:0.85,minS:2.5,drop:5,motor:false}
+};
+const fmtS=S=>nf(S,S<10?1:0).replace(",0","");
+
+(function initKabel(){
+  const sj=$("#kjenis");Object.entries(JENIS).forEach(([k,v])=>{const o=document.createElement("option");o.value=k;o.textContent=v.label;sj.appendChild(o)});
+  const sp=$("#kpasang");Object.entries(PASANG).forEach(([k,v])=>{const o=document.createElement("option");o.value=k;o.textContent=v.label;sp.appendChild(o)});
+  sj.value="kotak";sp.value="nymPipa";
+  sj.addEventListener("change",()=>{const j=JENIS[sj.value];$("#kpf").value=j.pf;$("#kdrop").value=j.drop;calcKabel()});
+  ["#kfasa","#kdaya","#kpf","#kamp","#kpanjang","#kpasang","#ksuhu","#kgrup","#kdrop"].forEach(s=>$(s).addEventListener("input",calcKabel));
+  // saling kunci: isi arus -> daya & cos φ terkunci; isi daya -> arus terkunci
+  function kunci(){const a=+$("#kamp").value>0, d=+$("#kdaya").value>0;
+    $("#kdaya").disabled=a; $("#kpf").disabled=a; $("#kamp").disabled=d&&!a;
+    $("#kdaya-lock").hidden=!a; $("#kamp-lock").hidden=!(d&&!a);}
+  ["#kdaya","#kamp"].forEach(s=>$(s).addEventListener("input",kunci)); kunci();
+  $("#kpasang").addEventListener("change",()=>{const p=PASANG[$("#kpasang").value];$("#ksuhu").value=p.suhu==="tanah"?"30":"35";calcKabel()});
+})();
+
+function calcKabel(){
+  const jk=$("#kjenis").value, J=JENIS[jk];
+  const f=+$("#kfasa").value; const Un=f===1?220:380;
+  const P=+$("#kdaya").value||0, pf=Math.min(1,Math.max(0.5,+$("#kpf").value||0.9)), Ia=+$("#kamp").value||0;
+  const L=+$("#kpanjang").value||0;
+  const pk=$("#kpasang").value, Pm=PASANG[pk];
+  const T=+$("#ksuhu").value, G=+$("#kgrup").value, lim=+$("#kdrop").value;
+  const out=$("#resKabel");
+  const Ib=Ia>0?Ia:(f===1?P/(Un*pf):P/(Math.sqrt(3)*Un*pf));
+  if(!(Ib>0&&L>0)){out.innerHTML='<div class="top"><b>Hasil</b></div><div class="why"><p>Isi daya (atau arus) beban dan panjang kabel.</p></div>';return}
+  const kT=KT[Pm.suhu][T]??1, kG=KG[Pm.grup][G]??1;
+  const Idsn=J.motor?Ib*1.25:Ib;                      // motor: pengaman & kabel min. 125 % arus beban penuh
+  const semua=[...MCB,...MCCB]; const In=semua.find(x=>x>=Idsn);
+  if(!In){out.innerHTML='<div class="top"><b>Di luar jangkauan</b></div><div class="why"><p>Arus beban '+nf(Ib,1)+' A melebihi 400 A. Ini sudah wilayah LVMDP dengan kabel paralel atau busduct, perlu hitungan perencana.</p></div>';return}
+  const isMCCB=In>63;
+  const tbl=KHA[Pm.tbl];
+  const sinp=Math.sqrt(1-pf*pf);
+  const dropOf=(i,I)=>{const R=R20[i]*1.2, X=0.08; const dv=(f===1?2:Math.sqrt(3))*I*L/1000*(R*pf+X*sinp); return {dv,pct:dv/Un*100}};
+  const rows=SZ.map((S,i)=>{const k=tbl[i];if(k==null||S>Pm.maxS||S<J.minS)return null;const Iz=k*kT*kG;const d=dropOf(i,Ib);return {S,i,kha:k,Iz,okI:Iz>=In,okV:d.pct<=lim,...d}}).filter(Boolean);
+  const A=rows.find(r=>r.okI&&r.okV);
+  const byI=rows.find(r=>r.okI);
+  const lbl=Pm.label;
+  if(!A){
+    const alt=pk.startsWith("nym")?'Ganti ke <b>NYY</b> (di tray atau ditanam): ukurannya tersedia sampai 300 mm².':'Pakai <b>2 kabel paralel</b> per fasa, perbesar tegangan (3 fasa), atau pindahkan panel lebih dekat ke beban.';
+    out.innerHTML='<div class="top"><b>Di luar jangkauan pilihan ini</b><span>'+lbl+'</span></div><div class="why"><h3>Kenapa tidak ketemu ukurannya?</h3><ol>'+
+    '<li>Arus beban <b>'+nf(Ib,1)+' A</b>'+(J.motor?' (dihitung 125 % = '+nf(Idsn,1)+' A untuk motor)':'')+', pengaman <b>'+In+' A</b>.</li>'+
+    (byI?'<li>Dari sisi arus, <b>'+fmtS(byI.S)+' mm²</b> sudah kuat ('+nf(byI.Iz,0)+' A), tapi pada jarak <b>'+nf(L)+' m</b> tegangan jatuhnya masih lebih dari '+lim+'% sampai ukuran terbesar yang ada.</li>':'<li>Tidak ada ukuran '+lbl.split(" ")[0]+' di tabel ini yang kuat mengalirkan '+In+' A setelah dikoreksi suhu '+T+' °C (×'+nf(kT,2)+') dan '+G+' sirkit berdampingan (×'+nf(kG,2)+').</li>')+
+    '<li>'+alt+'</li></ol></div>';
+    return;
+  }
+  const B=rows.find(r=>r.S>A.S);
+  const dipaksaDrop=byI&&byI.S<A.S;
+  const Sx=S=>fmtS(S);
+  const pakai=r=>nf(In/r.Iz*100,0);
+  const InB=B?[...MCB,...MCCB].filter(x=>x<=B.Iz).pop():null;
+  const kabelA=Pm.nama(Sx(A.S),f), kabelB=B?Pm.nama(Sx(B.S),f):null;
+  let html='<div class="top"><b>Lembar hitungan · Kabel &amp; MCB</b><span>'+J.label.split(" (")[0]+' · '+(f===1?'1 fasa 220 V':'3 fasa 380 V')+' · '+nf(L)+' m</span></div>';
+  html+='<div class="big">'+
+    '<div><small>Kabel</small><strong>'+Sx(A.S)+' mm²</strong><em>'+kabelA+'</em></div>'+
+    '<div><small>Pengaman</small><strong>'+(isMCCB?'MCCB ':'MCB ')+In+' A</strong><em>'+(f===1?'1 kutub + N (1P+N / 2P)':'3 kutub (3P)')+(J.motor?' · kurva D / motor':' · kurva C')+'</em></div>'+
+    '<div><small>Arus beban</small><strong>'+nf(Ib,1)+' A</strong><em>tegangan jatuh '+nf(A.pct,1)+'% (batas '+lim+'%)</em></div>'+
+  '</div>';
+  // Opsi A/B
+  const opts=[{judul:"Sesuai standar minimum",r:A,chip:"ok",kabel:kabelA,
+    plus:["Paling hemat bahan","Sudah memenuhi arus dan tegangan jatuh"],
+    minus:["MCB "+In+" A sudah "+pakai(A)+"% dari kuat hantar kabel, jadi MCB tidak bisa dinaikkan lagi tanpa ganti kabel",(A.pct>lim*0.7?"Tegangan jatuh "+nf(A.pct,1)+"% sudah dekat batas, lampu bisa sedikit redup saat beban penuh":"Kalau nanti beban ditambah, kabel ikut diganti")]}];
+  if(B)opts.push({judul:"Satu tingkat lebih besar",r:B,chip:"warn",kabel:kabelB,
+    plus:["Tegangan jatuh turun jadi "+nf(B.pct,1)+"%, alat dapat tegangan lebih penuh","Kabel lebih dingin saat beban penuh, isolasi lebih awet",(InB>In?"Nanti bisa naik MCB sampai "+InB+" A tanpa ganti kabel":"Ada ruang cadangan arus "+nf(B.Iz-In,0)+" A")],
+    minus:["Harga kabel lebih mahal (±"+nf((B.S/A.S-1)*100,0)+"% lebih banyak tembaga)","Kabel lebih kaku, terminal MCB "+In+" A harus muat "+Sx(B.S)+" mm²"]});
+  html+='<div class="why"><h3>Pilihan untuk owner</h3><div class="opts">'+opts.map((o,i)=>
+    '<div class="opt"><div class="opth"><span class="chip '+o.chip+'">Pilihan '+'AB'[i]+'</span><b>'+o.judul+': '+Sx(o.r.S)+' mm²</b></div>'+
+    '<p class="ref">'+o.kabel+' · kuat hantar '+nf(o.r.Iz,0)+' A setelah koreksi · tegangan jatuh '+nf(o.r.pct,1)+'%</p>'+
+    '<ul class="pm">'+o.plus.map(x=>'<li class="p">'+x+'</li>').join('')+o.minus.map(x=>'<li class="m">'+x+'</li>').join('')+'</ul></div>').join('')+'</div>'+
+    '<p class="hint" style="color:var(--ink)">Pilihan A sudah aman menurut standar. Pilihan B untuk jalur yang panjang, beban yang mungkin bertambah, atau alat yang sensitif tegangan. Sesuaikan dengan <b>budget</b>, MCB-nya tetap <b>'+In+' A</b>.</p></div>';
+  // Kenapa segitu
+  html+='<div class="why"><h3>Kenapa segitu?</h3><ol>'+
+    '<li>'+(Ia>0?'Arus beban diisi langsung <b>'+nf(Ib,1)+' A</b>.':'Beban '+nf(P)+' W pada '+(f===1?'220 V':'380 V 3 fasa')+' dengan cos φ '+nf(pf,2)+' menarik arus <b>'+nf(Ib,1)+' A</b>.')+(J.motor?' Motor saat start menarik arus jauh lebih besar, jadi pengaman dan kabel dihitung <b>125%</b> = '+nf(Idsn,1)+' A.':'')+'</li>'+
+    '<li>Pengaman dipilih satu tingkat <b>di atas</b> arus beban: <b>'+(isMCCB?'MCCB':'MCB')+' '+In+' A</b>. Kalau pas atau di bawah, MCB sering turun sendiri (jeglek) saat semua alat nyala.'+(isMCCB?' Di atas 63 A sudah pakai MCCB, bukan MCB biasa.':'')+'</li>'+
+    '<li>Kabel harus <b>lebih kuat dari MCB</b>, supaya saat beban lebih yang putus MCB-nya, bukan kabelnya yang panas. Angka kuat hantar kabel di katalog ('+nf(A.kha)+' A untuk '+Sx(A.S)+' mm²) berlaku pada 30 °C dan kabel sendirian. Di sini dikoreksi suhu '+T+' °C (×'+nf(kT,2)+')'+(kG<1?' dan '+G+' sirkit berdampingan (×'+nf(kG,2)+')':'')+', jadi kuat hantarnya <b>'+nf(A.Iz,0)+' A</b>, masih di atas MCB '+In+' A.</li>'+
+    '<li>Makin panjang kabel, makin banyak tegangan yang "hilang" di jalan. Pada '+nf(L)+' m, tegangan yang hilang <b>'+nf(A.dv,1)+' V ('+nf(A.pct,1)+'%)</b>, masih di bawah batas '+lim+'%.'+(dipaksaDrop?' <b>Catatan:</b> dari sisi arus sebenarnya '+Sx(byI.S)+' mm² sudah cukup, tapi karena jaraknya jauh tegangan jatuhnya lebih dari '+lim+'%, jadi naik ke '+Sx(A.S)+' mm².':'')+'</li>'+
+    (A.S===J.minS&&A.Iz>In*1.5?'<li>Secara arus, kabel yang lebih kecil pun sebenarnya kuat, tapi <b>'+Sx(J.minS)+' mm²</b> adalah batas minimum yang lazim untuk '+J.label.toLowerCase()+' (PUIL 2020 Tabel 52.2 dan praktik lapangan).</li>':'')+
+    '<li>Kabel pembumian (PE) <b>'+fmtS(PE(A.S))+' mm²</b> mengikuti PUIL 2020 Tabel 54.3'+(PE(A.S)<A.S?' (boleh lebih kecil dari penghantar fasa untuk ukuran di atas 16 mm²)':'')+'. Netral disamakan dengan fasa.</li>'+
+    (Pm.catatan?'<li><span class="chip warn">cek</span> '+Pm.catatan+'</li>':'')+
+  '</ol>';
+  html+='<div class="calc">Ib   = '+(Ia>0?nf(Ib,1)+' A (diisi)':(f===1?nf(P)+' ÷ (220 × '+nf(pf,2)+')':nf(P)+' ÷ (√3 × 380 × '+nf(pf,2)+')')+' = '+nf(Ib,1)+' A')+(J.motor?'\nIdsn = 1,25 × '+nf(Ib,1)+' = '+nf(Idsn,1)+' A (motor)':'')+
+    '\nIn   = pengaman standar ≥ '+nf(Idsn,1)+' A  →  '+In+' A\nIz   = KHA × k_suhu × k_kelompok = '+nf(A.kha)+' × '+nf(kT,2)+' × '+nf(kG,2)+' = '+nf(A.Iz,1)+' A  ≥  In ✓\nΔV   = '+(f===1?'2':'√3')+' × Ib × L × (R₇₀ cos φ + X sin φ) = '+(f===1?'2':'1,732')+' × '+nf(Ib,1)+' × '+nf(L/1000,3)+' × ('+nf(R20[A.i]*1.2,3)+' × '+nf(pf,2)+' + 0,08 × '+nf(sinp,2)+') = '+nf(A.dv,2)+' V = '+nf(A.pct,2)+'%  ≤ '+lim+'% ✓\nPE   = Tabel 54.3 ('+Sx(A.S)+' mm²)  →  '+fmtS(PE(A.S))+' mm²</div>';
+  html+='<p class="ref"><b>Acuan:</b> PUIL 2020 (SNI 0225:2020) Bagian 4-43 proteksi arus lebih (Ib ≤ In ≤ Iz), Bagian 5-52 pemilihan kabel dan faktor koreksi, Ayat 525 tegangan jatuh (indikatif 3% penerangan, 5% lainnya), Tabel 54.3 penghantar PE'+(J.motor?', Bagian 5-53 sirkit motor (125%)':'')+'. KHA dan resistansi dari Katalog Supreme LV PVC 2024 dan Building Wire 2023 (30 °C). Faktor berkelompok: '+KG[Pm.grup].src+'. R dikoreksi ke 70 °C (×1,2), X = 0,08 Ω/km. Merek lain bisa sedikit beda, cek datasheet-nya.</p></div>';
+  html+='<div class="actions"><button class="primary" type="button" id="cpKabel">Salin hasil untuk WhatsApp</button><span class="toast"></span></div>';
+  out.innerHTML=html;
+  $("#cpKabel").addEventListener("click",e=>{
+    const t="*Hitungan Kabel & MCB* (MEP-Kit)\n\nBeban: "+J.label+", "+(f===1?"1 fasa 220 V":"3 fasa 380 V")+(Ia>0?", arus "+nf(Ib,1)+" A":", "+nf(P)+" W, cos φ "+nf(pf,2))+"\nJalur: "+lbl+", "+nf(L)+" m, suhu "+T+" °C, "+G+" sirkit berdampingan\n\nArus beban: "+nf(Ib,1)+" A"+(J.motor?" (×1,25 motor = "+nf(Idsn,1)+" A)":"")+"\n*Pengaman: "+(isMCCB?"MCCB ":"MCB ")+In+" A"+(f===1?" 1P+N":" 3P")+"*\n\n*Pilihan A: "+kabelA+"*\nKuat hantar "+nf(A.Iz,0)+" A (setelah koreksi), tegangan jatuh "+nf(A.pct,1)+"% (batas "+lim+"%)"+
+      (B?"\n\n*Pilihan B: "+kabelB+"*\nTegangan jatuh "+nf(B.pct,1)+"%, ruang tambah beban lebih lega":"")+"\nPE: "+fmtS(PE(A.S))+" mm² (PUIL 2020 Tabel 54.3)\n\nAcuan: PUIL 2020 (4-43, 5-52, 525, Tabel 54.3), KHA Katalog Supreme 2024. Hasil perkiraan awal, cek & ricek sebelum dipasang.";
+    copyText(t,e.target);
+  });
+}
+
+drawLoads();calcDaya();calcLampu();calcAC();calcKabel();show();
+})();
+</script>
+
+</body>
+</html>
